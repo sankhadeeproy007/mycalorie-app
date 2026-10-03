@@ -2,8 +2,8 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Dock } from "@/components/Dock";
+import { MealSheet, type LogEntry, type SheetRequest } from "@/components/meal/MealSheet";
 import { EatenToday } from "@/components/EatenToday";
-import { EntrySheet, type EntryDraft, type EntryResult } from "@/components/EntrySheet";
 import { ScorePanel, StreakPanel } from "@/components/ProgressPanels";
 import { ProteinPanel } from "@/components/ProteinPanel";
 import { Regulars } from "@/components/Regulars";
@@ -11,7 +11,7 @@ import { TargetsSheet } from "@/components/TargetsSheet";
 import { Toast, type UndoNotice } from "@/components/Toast";
 import { useToday } from "@/lib/day";
 import { prepareForAnalysis, shelfThumbnail } from "@/lib/image";
-import { requestAnalysis } from "@/lib/meal-api";
+import { itemsFromRegular } from "@/lib/items";
 import {
   consistencyGraph,
   dayScore,
@@ -65,8 +65,7 @@ function formatStatusDate(key: string): string {
 export function HomeScreen() {
   const state = useAppState();
   const today = useToday();
-  const [draft, setDraft] = useState<EntryDraft | null>(null);
-  const [readingPhoto, setReadingPhoto] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<SheetRequest | null>(null);
   const [notice, setNotice] = useState<UndoNotice | null>(null);
   const [editingTargets, setEditingTargets] = useState(false);
 
@@ -95,32 +94,27 @@ export function HomeScreen() {
     setNotice({ key: log.id, message: `logged ${log.name} +${log.macros.protein} g`, undo: () => removeLog(log.id) });
 
   const logRegular = (meal: SavedMeal, portion: number) =>
-    announceLog(logMeal({ name: meal.name, macros: meal.macros, portion, savedMealId: meal.id }));
+    announceLog(
+      logMeal({ name: meal.name, macros: meal.macros, portion, savedMealId: meal.id, items: itemsFromRegular(meal) }),
+    );
 
-  const readPhoto = async (file: File) => {
-    let prepared;
+  const openPhoto = async (file: File) => {
     try {
-      prepared = await prepareForAnalysis(file);
+      setSheet({ kind: "photo", image: await prepareForAnalysis(file), file });
     } catch {
-      setDraft({ failure: "unreadable" });
-      return;
+      setSheet({ kind: "text", failure: "unreadable" });
     }
-    setReadingPhoto(prepared.dataUrl);
-    const result = await requestAnalysis(prepared);
-    setReadingPhoto(null);
-    const photo = { dataUrl: prepared.dataUrl, file };
-    setDraft(result.ok ? { photo, analysis: result.analysis } : { photo, failure: result.reason });
   };
 
-  const logEntry = async ({ name, macros, saveToShelf, photoFile }: EntryResult) => {
-    setDraft(null);
-    let savedMealId: string | undefined;
-    if (saveToShelf) {
+  const logEntry = async ({ name, macros, items, savedMealId, photoFile, saveAs }: LogEntry) => {
+    setSheet(null);
+    let regularId = savedMealId;
+    if (saveAs) {
       const photo = photoFile ? await shelfThumbnail(photoFile).catch(() => undefined) : undefined;
-      savedMealId = saveMeal({ name, macros, photo }).id;
+      regularId = saveMeal({ ...saveAs, photo }).id;
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
-    announceLog(logMeal({ name, macros, savedMealId }));
+    announceLog(logMeal({ name, macros, items, savedMealId: regularId }));
   };
 
   const removeFromToday = (log: MealLog) => {
@@ -154,7 +148,7 @@ export function HomeScreen() {
               <ScorePanel score={view.score} recent={view.recentScores} />
               <StreakPanel graph={view.graph} streaks={view.streaks} milestone={view.milestone} today={today} />
             </div>
-            <Regulars meals={view.regulars} onLog={logRegular} />
+            <Regulars meals={view.regulars} onLog={logRegular} onAdjust={(regular) => setSheet({ kind: "adjust", regular })} />
             <EatenToday logs={view.todaysLogs} onRemove={removeFromToday} onSaveToRegulars={addToRegulars} />
           </>
         ) : (
@@ -166,8 +160,17 @@ export function HomeScreen() {
       </main>
 
       <Toast notice={notice} onDismiss={dismissNotice} />
-      <Dock readingPhoto={readingPhoto} onPhoto={readPhoto} onTypeIn={() => setDraft({})} />
-      <EntrySheet draft={draft} onLog={logEntry} onClose={() => setDraft(null)} />
+      <Dock onPhoto={openPhoto} onTypeIn={() => setSheet({ kind: "text" })} />
+      <MealSheet
+        request={sheet}
+        regulars={view?.regulars ?? []}
+        onLog={logEntry}
+        onLogRegular={(regular) => {
+          setSheet(null);
+          logRegular(regular, 1);
+        }}
+        onClose={() => setSheet(null)}
+      />
       {state && (
         <TargetsSheet
           open={editingTargets}

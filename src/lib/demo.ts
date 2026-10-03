@@ -1,5 +1,5 @@
 import { dayKey } from "./day";
-import type { AppState, MealLog, SavedMeal } from "./types";
+import type { AppState, Macros, MealItem, MealLog, SavedMeal } from "./types";
 
 /**
  * Synthetic data for `/?demo`, stored under its own key so it never mixes
@@ -9,6 +9,16 @@ import type { AppState, MealLog, SavedMeal } from "./types";
 
 const unsplash = (id: string) =>
   `https://images.unsplash.com/${id}?w=360&h=360&fit=crop&q=70&auto=format`;
+
+const demoItem = (id: string, name: string, quantity: number, unit: string, macros: Macros, extra: Partial<MealItem> = {}): MealItem => ({
+  id,
+  name,
+  quantity,
+  unit,
+  baseQuantity: quantity,
+  baseMacros: macros,
+  ...extra,
+});
 
 const DEMO_MEALS: SavedMeal[] = [
   {
@@ -50,8 +60,20 @@ const DEMO_MEALS: SavedMeal[] = [
     id: "demo-chicken-roti",
     name: "Chicken curry, 2 roti",
     photo: unsplash("photo-1708782344490-9026aaa5eec7"),
-    macros: { protein: 38, kcal: 560, carbs: 42, fat: 22 },
+    macros: { protein: 38, kcal: 600, carbs: 42, fat: 22 },
+    items: [
+      demoItem("demo-i1", "Chicken curry", 1, "katori", { protein: 31, kcal: 290, carbs: 6, fat: 11 }, { gramsPerUnit: 180 }),
+      demoItem("demo-i2", "Roti", 2, "roti", { protein: 7, kcal: 230, carbs: 36, fat: 2 }, { gramsPerUnit: 38 }),
+      demoItem("demo-i3", "Oil / ghee", 2, "tsp", { protein: 0, kcal: 80, carbs: 0, fat: 9 }, { cookingFat: true, gramsPerUnit: 4.5 }),
+    ],
     createdAt: 6,
+  },
+  {
+    id: "demo-whey",
+    name: "Whey protein",
+    macros: { protein: 24, kcal: 130, carbs: 3, fat: 2 },
+    product: { servingLabel: "scoop", servingSize: 33, servingUnit: "g", per100: { protein: 72.7, kcal: 394, carbs: 9.1, fat: 6.1 } },
+    createdAt: 7,
   },
 ];
 

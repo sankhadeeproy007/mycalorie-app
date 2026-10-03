@@ -1,27 +1,56 @@
 "use client";
 
-import type { Analysis } from "./types";
+import { totalMacros, formatQuantity, formatUnit } from "./items";
 import type { PreparedImage } from "./image";
+import type { Analysis, EstimatedItem, SavedMeal } from "./types";
 
 export type AnalyzeFailure = "not_configured" | "quota" | "unreadable" | "offline" | "failed";
 
-export type AnalyzeResult = { ok: true; analysis: Analysis } | { ok: false; reason: AnalyzeFailure };
+export type ApiResult<T> = { ok: true; value: T } | { ok: false; reason: AnalyzeFailure };
 
-export async function requestAnalysis(image: PreparedImage): Promise<AnalyzeResult> {
+const KNOWN_FAILURES = new Set<AnalyzeFailure>(["not_configured", "quota", "unreadable"]);
+
+async function post<T>(url: string, body: unknown): Promise<ApiResult<T>> {
   let response: Response;
   try {
-    response = await fetch("/api/analyze", {
+    response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: image.base64, mimeType: image.mimeType }),
+      body: JSON.stringify(body),
     });
   } catch {
     return { ok: false, reason: "offline" };
   }
 
-  if (response.ok) return { ok: true, analysis: (await response.json()) as Analysis };
-
+  if (response.ok) return { ok: true, value: (await response.json()) as T };
   const { error } = (await response.json().catch(() => ({}))) as { error?: string };
-  if (error === "not_configured" || error === "quota" || error === "unreadable") return { ok: false, reason: error };
-  return { ok: false, reason: "failed" };
+  return { ok: false, reason: KNOWN_FAILURES.has(error as AnalyzeFailure) ? (error as AnalyzeFailure) : "failed" };
+}
+
+/** A one-line description of each regular, so the AI can recognise it in a photo. */
+function summarise(regular: SavedMeal): string {
+  if (regular.product) return `packaged product, 1 ${regular.product.servingLabel} = ${regular.product.servingSize} ${regular.product.servingUnit}`;
+  if (!regular.items?.length) return "saved meal";
+  return regular.items.map((item) => `${formatQuantity(item.quantity)} ${formatUnit(item.unit, item.quantity)} ${item.name}`).join(", ");
+}
+
+export type PhotoContext = { hint: string; outside: boolean; regulars: SavedMeal[] };
+
+export function requestAnalysis(image: PreparedImage, { hint, outside, regulars }: PhotoContext) {
+  return post<Analysis>("/api/analyze", {
+    image: image.base64,
+    mimeType: image.mimeType,
+    hint,
+    outside,
+    regulars: regulars.map((regular) => ({
+      id: regular.id,
+      name: regular.name,
+      summary: summarise(regular),
+      protein: regular.items ? totalMacros(regular.items).protein : regular.macros.protein,
+    })),
+  });
+}
+
+export function requestEstimate(text: string, outside: boolean) {
+  return post<{ name: string; items: EstimatedItem[] }>("/api/estimate", { text, outside });
 }

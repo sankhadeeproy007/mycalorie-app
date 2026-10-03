@@ -33,10 +33,14 @@ A private, single-user tool built around one person's routine rather than a food
 
 ## Capabilities and Constraints
 
-- **Analyze a photo:** upload or capture a meal photo; the AI returns the foods it sees, estimated portions, and calories, protein, carbs and fat for each.
-- **Review:** edit foods and portions before saving.
-- **Save for later:** an opt-in checkbox on the review step saves the meal (name, a compressed photo, corrected macros) for reuse. Already-logged meals can also be saved afterward.
-- **Quick add:** saved meals appear as photo tiles; one tap logs a meal, with a portion multiplier (½×, 1×, 1½×, 2×). No AI call.
+- **Analyze a photo:** take or pick a photo, optionally add a free-text hint ("3 eggs, 1 tsp ghee") and flip an **Outside food** switch; without it the AI judges home vs restaurant from the photo. The AI (Gemini free tier) treats the hint as fact and returns each item in Indian household measures with grams, a separate oil/ghee line for cooked dishes, and a confidence flag per item.
+- **Nutrition labels:** the same camera recognises a nutrition label and reads exact per-serving and per-100 g/ml values. The product is saved (name asked for if the brand isn't visible) and counted in servings, with grams or ml one tap away.
+- **Regular matching:** the AI is told the owner's regulars; when a photo confidently matches one, the review offers to log that regular instead.
+- **Review:** items the AI is unsure of come first, marked "check". Each item has a quantity control (½ steps for countables and katori/ladle/scoop/cup, ½ tsp for oil/ghee/sugar, 25 g or ml by weight) that rescales its macros; wrong items can be deleted; **+ add** pulls in saved products and regulars or a short text description the AI estimates without a photo. Totals stay directly editable.
+- **Text logging:** Type accepts a description ("2 rotis and a katori of dal"), estimated by the AI, as well as raw numbers.
+- **Save for later:** an opt-in checkbox saves the meal with all its items (and a small copy of the photo) as a regular. Already-logged meals can also be saved afterward.
+- **Products and regulars:** scanned products are one-tap regulars and also ingredients (whey shake = 2 scoops whey + 300 ml milk). Regulars remember their items: one tap logs them as saved, the portion picker scales everything, and "Adjust before logging" changes items for that log only.
+- **Quick add:** regulars appear as photo tiles; one tap logs a meal, with a portion multiplier (½×, 1×, 1½×, 2×). No AI call.
 - **Daily targets:** protein (required), calories, carbs and fat, each optional except protein. The targets sheet can suggest calories from the three macros (4/4/9 kcal per gram).
 - **Daily total:** today's totals against each target, showing what's left. Protein is the main number; calories, carbs and fat are secondary rows. "Today" follows the owner's timezone.
 - **Daily score:** one number for the day, from how close intake landed to all four targets (protein weighted most).
@@ -47,7 +51,8 @@ A private, single-user tool built around one person's routine rather than a food
 - Access is protected by a single password (env var). No multi-user accounts.
 - **Zero cost:** free tiers only. The Gemini free tier's limits can change without notice, so the AI provider sits behind a single function that can be swapped.
 - Free-tier Gemini data may be used by Google for training. The owner accepts this for food photos.
-- **Undecided:** the product name ("mycalorie" is the working name), and whether to add text entry ("2 rotis and a katori of dal") later.
+- **Later:** learning from corrections over time, a screen to edit/manage regulars, and an accuracy comparison of Gemini vs Claude on the owner's own photos (decided 2026-10-03 to stay on Gemini's free tier).
+- **Undecided:** the product name ("mycalorie" is the working name).
 
 ## Evidence on Hand
 

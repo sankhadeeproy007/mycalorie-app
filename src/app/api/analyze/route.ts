@@ -1,17 +1,24 @@
-import { AnalysisError, analyzeMeal } from "@/lib/analyze-meal";
+import { mockPhotoAnalysis } from "@/lib/analysis-fixtures";
+import { clip, mockingGemini, respondWithAnalysis } from "@/lib/analysis-response";
+import { analyzePhoto, type RegularSummary } from "@/lib/analyze-meal";
 
 const MAX_BASE64_LENGTH = 4_000_000;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_HINT = 300;
+const MAX_REGULARS = 60;
 
-const STATUS_BY_CODE: Record<AnalysisError["code"], number> = {
-  not_configured: 503,
-  quota: 429,
-  unreadable: 422,
-  upstream: 502,
-};
+function readRegulars(value: unknown): RegularSummary[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, MAX_REGULARS).flatMap((entry) => {
+    const id = clip(entry?.id, 64);
+    const name = clip(entry?.name, 80);
+    const protein = Number(entry?.protein);
+    return id && name && Number.isFinite(protein) ? [{ id, name, summary: clip(entry?.summary, 160), protein }] : [];
+  });
+}
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as { image?: unknown; mimeType?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const image = body?.image;
   const mimeType = body?.mimeType;
 
@@ -22,14 +29,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "too_large" }, { status: 413 });
   }
 
-  try {
-    return Response.json(await analyzeMeal(image, mimeType));
-  } catch (error) {
-    if (error instanceof AnalysisError) {
-      console.error(`analyze: ${error.code}: ${error.message}`);
-      return Response.json({ error: error.code }, { status: STATUS_BY_CODE[error.code] });
-    }
-    console.error("analyze: unexpected failure", error);
-    return Response.json({ error: "upstream" }, { status: 502 });
-  }
+  const context = { hint: clip(body?.hint, MAX_HINT), outside: body?.outside === true, regulars: readRegulars(body?.regulars) };
+  if (mockingGemini()) return Response.json(mockPhotoAnalysis(context.hint));
+  return respondWithAnalysis("analyze", () => analyzePhoto(image, mimeType, context));
 }

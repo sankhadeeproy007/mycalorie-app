@@ -18,6 +18,8 @@ Photos are read by the Gemini API free tier. Get a free key (no card) at Google 
 
 Without a key, or when the free allowance runs out, the app falls back to entering a meal by hand.
 
+For working on the review screens without a key, run `MOCK_GEMINI=1 npm run dev`: photo reads return a sample omelette, a hint containing "label" returns a sample nutrition label, and text estimates return one sample item. The mock never runs in production.
+
 ## Access code
 
 The deployed app opens on an access-code screen. Set two environment variables (in Vercel: Project → Settings → Environment Variables):

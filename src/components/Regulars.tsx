@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { UtensilsCrossed, X } from "lucide-react";
+import { SlidersHorizontal, UtensilsCrossed, X } from "lucide-react";
 import { PORTIONS } from "@/lib/portions";
 import type { SavedMeal } from "@/lib/types";
 import { Panel } from "./Panel";
@@ -10,10 +10,11 @@ import styles from "./Regulars.module.css";
 type RegularsProps = {
   meals: SavedMeal[];
   onLog: (meal: SavedMeal, portion: number) => void;
+  onAdjust: (meal: SavedMeal) => void;
 };
 
 /** Saved meals as photo tiles: one tap logs a 1× portion, the corner chip picks another. */
-export function Regulars({ meals, onLog }: RegularsProps) {
+export function Regulars({ meals, onLog, onAdjust }: RegularsProps) {
   const [portionFor, setPortionFor] = useState<string | null>(null);
 
   return (
@@ -34,6 +35,10 @@ export function Regulars({ meals, onLog }: RegularsProps) {
                 setPortionFor(null);
                 onLog(meal, portion);
               }}
+              onAdjust={() => {
+                setPortionFor(null);
+                onAdjust(meal);
+              }}
             />
           ))}
         </ul>
@@ -47,9 +52,10 @@ type RegularTileProps = {
   choosing: boolean;
   onChoosePortion: (open: boolean) => void;
   onLog: (portion: number) => void;
+  onAdjust: () => void;
 };
 
-function RegularTile({ meal, choosing, onChoosePortion, onLog }: RegularTileProps) {
+function RegularTile({ meal, choosing, onChoosePortion, onLog, onAdjust }: RegularTileProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const protein = meal.macros.protein;
 
@@ -96,7 +102,10 @@ function RegularTile({ meal, choosing, onChoosePortion, onLog }: RegularTileProp
       {choosing && (
         <div ref={panelRef} className={styles.picker} role="group" aria-label={`Portion of ${meal.name}`}>
           <span className={styles.pickerHead}>
-            <span className={styles.pickerTitle}>portion</span>
+            <span className="visually-hidden">{meal.product ? `${meal.product.servingLabel}s` : "Portion"}</span>
+            <button type="button" className={styles.close} onClick={onAdjust} aria-label={`Adjust ${meal.name} before logging`}>
+              <SlidersHorizontal size={14} strokeWidth={2} aria-hidden="true" />
+            </button>
             <button type="button" className={styles.close} onClick={() => onChoosePortion(false)} aria-label="Close portions">
               <X size={14} strokeWidth={2.25} aria-hidden="true" />
             </button>

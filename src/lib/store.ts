@@ -3,7 +3,8 @@
 import { useSyncExternalStore } from "react";
 import { dayKey } from "./day";
 import { demoState } from "./demo";
-import { NO_TARGETS, type AppState, type Macros, type MealLog, type SavedMeal, type Targets } from "./types";
+import { roundMacros, scaleItems, scaleMacros } from "./items";
+import { NO_TARGETS, type AppState, type Macros, type MealItem, type MealLog, type ProductInfo, type SavedMeal, type Targets } from "./types";
 
 /**
  * Browser-local store. It sits behind these functions so the Supabase
@@ -11,7 +12,7 @@ import { NO_TARGETS, type AppState, type Macros, type MealLog, type SavedMeal, t
  */
 
 const STORAGE_KEY = "mycalorie:v1";
-const DEMO_KEY = "mycalorie:demo:v3";
+const DEMO_KEY = "mycalorie:demo:v4";
 
 const EMPTY_STATE: AppState = { settings: { targets: NO_TARGETS }, saved: [], logs: [] };
 
@@ -90,24 +91,16 @@ function newId(): string {
   return crypto.randomUUID();
 }
 
-export function scaleMacros(macros: Macros, factor: number): Macros {
-  return {
-    protein: Math.round(macros.protein * factor),
-    kcal: Math.round(macros.kcal * factor),
-    carbs: Math.round(macros.carbs * factor),
-    fat: Math.round(macros.fat * factor),
-  };
-}
+type NewLog = { name: string; macros: Macros; portion?: number; savedMealId?: string; items?: MealItem[] };
 
-type NewLog = { name: string; macros: Macros; portion?: number; savedMealId?: string };
-
-export function logMeal({ name, macros, portion = 1, savedMealId }: NewLog): MealLog {
+export function logMeal({ name, macros, portion = 1, savedMealId, items }: NewLog): MealLog {
   const now = Date.now();
   const log: MealLog = {
     id: newId(),
     name,
-    macros: scaleMacros(macros, portion),
+    macros: roundMacros(scaleMacros(macros, portion)),
     portion,
+    items: items && scaleItems(items, portion),
     eatenAt: now,
     day: dayKey(new Date(now)),
     savedMealId,
@@ -125,7 +118,9 @@ export function restoreLog(log: MealLog) {
   commit((prev) => ({ ...prev, logs: [...prev.logs, log].sort((a, b) => a.eatenAt - b.eatenAt) }));
 }
 
-export function saveMeal(meal: { name: string; macros: Macros; photo?: string }): SavedMeal {
+type NewRegular = { name: string; macros: Macros; photo?: string; items?: MealItem[]; product?: ProductInfo };
+
+export function saveMeal(meal: NewRegular): SavedMeal {
   const saved: SavedMeal = { ...meal, id: newId(), createdAt: Date.now() };
   commit((prev) => ({ ...prev, saved: [...prev.saved, saved] }));
   return saved;
@@ -133,7 +128,11 @@ export function saveMeal(meal: { name: string; macros: Macros; photo?: string })
 
 /** Puts an already-logged meal on the shelf, at its 1× portion. */
 export function saveLogToShelf(log: MealLog): SavedMeal {
-  const saved = saveMeal({ name: log.name, macros: scaleMacros(log.macros, 1 / log.portion) });
+  const saved = saveMeal({
+    name: log.name,
+    macros: roundMacros(scaleMacros(log.macros, 1 / log.portion)),
+    items: log.items && scaleItems(log.items, 1 / log.portion),
+  });
   commit((prev) => ({
     ...prev,
     logs: prev.logs.map((entry) => (entry.id === log.id ? { ...entry, savedMealId: saved.id } : entry)),
