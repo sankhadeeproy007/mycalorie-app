@@ -1,0 +1,195 @@
+.empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.logButton {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  text-align: left;
+  background: none;
+}
+
+.photo,
+.noPhoto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 6px;
+  object-fit: cover;
+  transition: opacity 150ms var(--ease-out);
+}
+
+.logButton:hover .photo {
+  opacity: 0.88;
+}
+
+.logButton:active .photo {
+  outline: 2px solid var(--protein);
+  outline-offset: -2px;
+}
+
+.noPhoto {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: var(--raised);
+}
+
+.name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 2.5em;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  text-wrap: pretty;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.protein {
+  color: var(--protein);
+  font-size: 0.8rem;
+}
+
+.portionTab {
+  position: relative;
+  padding: 1px 6px;
+  border: 1px solid var(--seam-strong);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  background: none;
+}
+
+/* 44px touch target around the compact tab. */
+.portionTab::before {
+  content: "";
+  position: absolute;
+  inset: -12px -10px;
+}
+
+.portionTab:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+/* One flat surface over the tile: cells divided by 1px seams, no boxes within boxes. */
+.picker {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr 1fr;
+  gap: 1px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--seam-strong);
+  box-shadow: 0 0 0 1px var(--seam-strong);
+  transform-origin: top center;
+  animation: expand 160ms var(--ease-out) both;
+}
+
+@keyframes expand {
+  from {
+    scale: 1 0.6;
+    opacity: 0;
+  }
+}
+
+.pickerHead {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 8px;
+  background: var(--raised);
+}
+
+.pickerTitle {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant: all-small-caps;
+  letter-spacing: 0.06em;
+}
+
+.close {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-left: 1px solid var(--seam-strong);
+  color: var(--muted);
+  background: none;
+}
+
+.close::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+}
+
+.close:hover {
+  color: var(--text);
+}
+
+.portion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 0;
+  font-size: 0.85rem;
+  background: var(--panel);
+}
+
+.portion:hover {
+  background: var(--raised);
+}
+
+.portion[data-default] {
+  color: var(--protein);
+}
+
+.portion:focus-visible {
+  outline: 2px solid var(--accent-edge);
+  outline-offset: -2px;
+  border-radius: 0;
+}
+
+.portionGrams {
+  color: var(--muted);
+  font-size: 0.7rem;
+}

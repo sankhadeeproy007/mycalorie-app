@@ -1,0 +1,92 @@
+.empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.list {
+  margin: -12px;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(3.6em, auto) 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 4px 4px 4px 12px;
+  border-bottom: 1px solid var(--seam);
+}
+
+.item:last-child {
+  border-bottom: 0;
+}
+
+.time {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.portion {
+  color: var(--muted);
+}
+
+.numbers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.protein {
+  color: var(--protein);
+  font-size: 0.85rem;
+}
+
+.kcal {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.actions {
+  display: flex;
+}
+
+.iconButton,
+.saved {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: none;
+}
+
+.iconButton:hover {
+  color: var(--text);
+  background: var(--raised);
+}
+
+.saved {
+  color: var(--text);
+}
+
+/* Destructive stays quiet until it is the thing under the finger. */
+.remove:hover,
+.remove:focus-visible {
+  color: var(--danger);
+}

@@ -1,0 +1,57 @@
+.dock {
+  position: fixed;
+  z-index: 21;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: calc(var(--dock-height) + 34px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 560px;
+  width: 100%;
+  min-height: 48px;
+  padding: 4px 4px 4px 14px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-panel);
+  background: var(--raised);
+  pointer-events: auto;
+  animation: rise 180ms var(--ease-out) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+.message {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+}
+
+.undo {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+}
+
+.undo:hover {
+  background: var(--panel);
+}

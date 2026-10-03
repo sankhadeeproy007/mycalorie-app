@@ -1,0 +1,160 @@
+.sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90dvh;
+  margin: auto auto 0;
+  padding: 0;
+  border: 1px solid var(--seam);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+  color: var(--text);
+  background: var(--panel);
+}
+
+.sheet[open] {
+  animation: slide 220ms var(--ease-out) both;
+}
+
+.sheet::backdrop {
+  background: rgba(1, 4, 9, 0.7);
+}
+
+@keyframes slide {
+  from {
+    translate: 0 32px;
+    opacity: 0;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 var(--gutter) calc(16px + env(safe-area-inset-bottom));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  margin: 0 calc(var(--gutter) * -1);
+  padding: 0 6px 0 var(--gutter);
+  border-bottom: 1px solid var(--seam);
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: none;
+}
+
+.close:hover {
+  color: var(--text);
+  background: var(--raised);
+}
+
+.field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-variant: all-small-caps;
+  letter-spacing: 0.06em;
+}
+
+.input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-control);
+  background: var(--well);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--accent-edge);
+  outline-offset: 0;
+  border-color: var(--accent-edge);
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+.macros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.primaryField {
+  grid-column: 1 / -1;
+}
+
+.primaryField .input {
+  min-height: 54px;
+  color: var(--protein);
+  font: 600 1.5rem var(--font-mono);
+}
+
+.unitInput {
+  position: relative;
+  display: block;
+}
+
+.unitInput .input {
+  padding-right: 3.2em;
+  font-family: var(--font-mono);
+}
+
+.unit {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--muted);
+  font: 400 0.8rem var(--font-mono);
+  pointer-events: none;
+}
+
+.submit {
+  min-height: 52px;
+  border: 1px solid var(--accent-edge);
+  border-radius: var(--radius-panel);
+  color: #fff;
+  font-weight: 600;
+  background: var(--accent);
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.submit:disabled {
+  cursor: not-allowed;
+  border-color: var(--seam-strong);
+  color: var(--muted);
+  background: var(--raised);
+}

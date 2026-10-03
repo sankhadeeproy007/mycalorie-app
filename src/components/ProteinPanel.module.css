@@ -1,0 +1,133 @@
+.edit {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: -6px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: none;
+}
+
+/* 44px touch target around a compact header action. */
+.edit::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+
+.edit:hover {
+  color: var(--text);
+  background: var(--raised);
+}
+
+.hero {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 2px 0 0;
+}
+
+.heroValue {
+  color: var(--protein);
+  font-size: 2.75rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.heroUnit {
+  margin-left: 2px;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.heroLabel {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.bar,
+.mini {
+  display: block;
+  overflow: hidden;
+  background: var(--graph-0);
+}
+
+.bar span,
+.mini span {
+  display: block;
+  height: 100%;
+  transform-origin: left center;
+  transition: scale 420ms var(--ease-out);
+}
+
+.bar {
+  height: 6px;
+  margin: 14px 0 4px;
+  border-radius: 3px;
+}
+
+.mini {
+  height: 4px;
+  border-radius: 2px;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 0;
+  font-size: 0.82rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 3.4em 1fr 6.2em 3.6em;
+  align-items: center;
+  gap: 10px;
+}
+
+.row dd {
+  margin: 0;
+}
+
+.rowLabel {
+  color: var(--muted);
+}
+
+.rowValue {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rowState {
+  color: var(--muted);
+}
+
+.rowTarget {
+  color: var(--muted);
+  text-align: right;
+}
+
+.empty {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.setTargets {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-control);
+  font-weight: 600;
+  background: var(--raised);
+}
+
+.setTargets:hover {
+  border-color: var(--muted);
+}

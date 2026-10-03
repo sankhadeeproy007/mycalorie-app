@@ -1,0 +1,148 @@
+.page {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: calc(16px + env(safe-area-inset-top)) var(--gutter) calc(16px + env(safe-area-inset-bottom));
+}
+
+.panel {
+  width: 100%;
+  max-width: 380px;
+  border: 1px solid var(--seam);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--seam);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
+}
+
+.host {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.body {
+  padding: 20px 16px 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.hint {
+  margin: 6px 0 20px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* The real input sits invisibly over the cells, so taps, paste and autofill all land on it. */
+.cells {
+  position: relative;
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 8px;
+}
+
+.input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  border: 0;
+  color: transparent;
+  caret-color: transparent;
+  background: transparent;
+  opacity: 0.01;
+}
+
+.cell {
+  display: grid;
+  place-items: center;
+  height: 56px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-control);
+  color: var(--protein);
+  font-size: 1.5rem;
+  font-weight: 600;
+  background: var(--well);
+  transition: border-color 150ms var(--ease-out);
+}
+
+.cell[data-filled] {
+  border-color: var(--muted);
+}
+
+.input:focus-visible ~ .cell[data-active] {
+  border-color: var(--accent-edge);
+  box-shadow: 0 0 0 1px var(--accent-edge);
+}
+
+.cells[data-state="wrong"] .cell {
+  border-color: rgba(248, 81, 73, 0.6);
+  animation: nudge 260ms var(--ease-out);
+}
+
+@keyframes nudge {
+  30% {
+    translate: -4px 0;
+  }
+  60% {
+    translate: 3px 0;
+  }
+}
+
+.message {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.message[data-state="wrong"],
+.message[data-state="too_many"],
+.message[data-state="not_configured"],
+.message[data-state="offline"] {
+  color: var(--text);
+}
+
+.submit {
+  min-height: 48px;
+  border: 1px solid var(--accent-edge);
+  border-radius: var(--radius-panel);
+  color: #fff;
+  font-weight: 600;
+  background: var(--accent);
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.submit:disabled {
+  cursor: not-allowed;
+  border-color: var(--seam-strong);
+  color: var(--muted);
+  background: var(--raised);
+}

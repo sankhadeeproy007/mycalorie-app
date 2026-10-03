@@ -1,0 +1,41 @@
+.intro {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.suggestion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--seam);
+  border-radius: var(--radius-control);
+  background: var(--well);
+  font-size: 0.85rem;
+}
+
+.suggestion p {
+  flex: 1 1 14em;
+  margin: 0;
+}
+
+.suggestion strong {
+  color: var(--kcal);
+  font: 500 0.85rem var(--font-mono);
+}
+
+.useCalories {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-control);
+  font-weight: 500;
+  background: var(--panel);
+}
+
+.useCalories:hover {
+  border-color: var(--muted);
+}

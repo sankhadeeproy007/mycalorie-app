@@ -1,0 +1,554 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-03T10:13:06.769Z",
+  "title": "Design System: Mycalorie",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Graphite Ground",
+        "canonical": "oklch(17.6% 0.014 258.4)",
+        "tonalRamp": [
+          "#080b11",
+          "#20242b",
+          "#3b4047",
+          "#595e66",
+          "#787e86",
+          "#999fa7",
+          "#bfc5cd",
+          "#e9eff8"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Graphite Panel",
+        "canonical": "oklch(21.6% 0.016 256.8)",
+        "tonalRamp": [
+          "#070b12",
+          "#1f242c",
+          "#3a4048",
+          "#585e67",
+          "#777e87",
+          "#989fa8",
+          "#bec5cf",
+          "#e8eff9"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Graphite Raised",
+        "canonical": "oklch(24.5% 0.018 255.7)",
+        "tonalRamp": [
+          "#070b13",
+          "#1e252d",
+          "#3a4049",
+          "#575e68",
+          "#767e88",
+          "#979faa",
+          "#bdc5d0",
+          "#e7effb"
+        ]
+      },
+      "well": {
+        "role": "neutral",
+        "displayName": "Graphite Well",
+        "canonical": "oklch(19.4% 0.016 256.8)",
+        "tonalRamp": [
+          "#070b12",
+          "#1f242c",
+          "#3a4048",
+          "#585e67",
+          "#777e87",
+          "#989fa9",
+          "#bec5cf",
+          "#e8effa"
+        ]
+      },
+      "seam": {
+        "role": "neutral",
+        "displayName": "Seam",
+        "canonical": "oklch(29.2% 0.020 260.6)",
+        "tonalRamp": [
+          "#070b14",
+          "#1e242e",
+          "#3a404b",
+          "#575e69",
+          "#767e8a",
+          "#979fab",
+          "#bdc5d2",
+          "#e7effd"
+        ]
+      },
+      "seam-strong": {
+        "role": "neutral",
+        "displayName": "Strong Seam",
+        "canonical": "oklch(35.4% 0.021 259.4)",
+        "tonalRamp": [
+          "#060b14",
+          "#1e242f",
+          "#39404b",
+          "#575e6a",
+          "#767e8a",
+          "#979fac",
+          "#bcc5d2",
+          "#e6effd"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Console White",
+        "canonical": "oklch(94.3% 0.011 243.7)",
+        "tonalRamp": [
+          "#070c10",
+          "#202529",
+          "#3b4145",
+          "#585e63",
+          "#787e83",
+          "#999fa5",
+          "#bec5cb",
+          "#e8eff5"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Comment Grey",
+        "canonical": "oklch(66.2% 0.018 250.9)",
+        "tonalRamp": [
+          "#060c13",
+          "#1e252d",
+          "#394149",
+          "#565f68",
+          "#767e88",
+          "#969faa",
+          "#bcc5d0",
+          "#e6f0fb"
+        ]
+      },
+      "protein": {
+        "role": "secondary",
+        "displayName": "Protein Blue",
+        "canonical": "oklch(78.6% 0.115 246.7)",
+        "tonalRamp": [
+          "#000c1b",
+          "#002642",
+          "#02426f",
+          "#15629a",
+          "#3c82be",
+          "#5ea5e2",
+          "#91caff",
+          "#e2f0fe"
+        ]
+      },
+      "kcal": {
+        "role": "secondary",
+        "displayName": "Calorie Violet",
+        "canonical": "oklch(80.1% 0.127 305.9)",
+        "tonalRamp": [
+          "#130024",
+          "#340453",
+          "#512874",
+          "#6f4796",
+          "#9067b9",
+          "#b289dd",
+          "#d6b1ff",
+          "#f3eaff"
+        ]
+      },
+      "carbs": {
+        "role": "secondary",
+        "displayName": "Carb Amber",
+        "canonical": "oklch(79.0% 0.139 85.2)",
+        "tonalRamp": [
+          "#110a00",
+          "#302201",
+          "#523c02",
+          "#765805",
+          "#9e7601",
+          "#c59616",
+          "#edbd4c",
+          "#ffedc7"
+        ]
+      },
+      "fat": {
+        "role": "secondary",
+        "displayName": "Fat Green",
+        "canonical": "oklch(84.2% 0.164 145.8)",
+        "tonalRamp": [
+          "#001001",
+          "#002d08",
+          "#024e14",
+          "#047221",
+          "#259539",
+          "#4fb85b",
+          "#77e080",
+          "#caffcc"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Commit Blue",
+        "canonical": "oklch(56.9% 0.202 259.7)",
+        "tonalRamp": [
+          "#000925",
+          "#002055",
+          "#00398c",
+          "#0054c7",
+          "#2776f2",
+          "#619dfe",
+          "#a3c6fe",
+          "#e6effe"
+        ]
+      },
+      "accent-edge": {
+        "role": "primary",
+        "displayName": "Commit Blue Edge",
+        "canonical": "oklch(64.6% 0.188 257.4)",
+        "tonalRamp": [
+          "#000a22",
+          "#002250",
+          "#003c84",
+          "#0058bc",
+          "#2479ea",
+          "#5b9eff",
+          "#a0c6fe",
+          "#e5efff"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Commit Blue Lift",
+        "canonical": "oklch(60.5% 0.194 259.3)",
+        "tonalRamp": [
+          "#000924",
+          "#002054",
+          "#013a8a",
+          "#0055c5",
+          "#2a77ee",
+          "#609dfe",
+          "#a1c6ff",
+          "#e6effe"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Failure Red",
+        "canonical": "oklch(66.5% 0.205 27.0)",
+        "tonalRamp": [
+          "#1f0000",
+          "#4b0103",
+          "#7d0009",
+          "#b10212",
+          "#dd3532",
+          "#ff645a",
+          "#ffaba1",
+          "#ffe9e6"
+        ]
+      },
+      "graph-0": {
+        "role": "neutral",
+        "displayName": "Graph Empty",
+        "canonical": "oklch(25.0% 0.022 257.3)",
+        "tonalRamp": [
+          "#1b222c",
+          "#2c3e52",
+          "#3c5976",
+          "#4f79a0",
+          "#79c0ff"
+        ]
+      },
+      "graph-1": {
+        "role": "secondary",
+        "displayName": "Graph Under Half",
+        "canonical": "oklch(35.7% 0.042 251.6)",
+        "tonalRamp": [
+          "#1b222c",
+          "#2c3e52",
+          "#3c5976",
+          "#4f79a0",
+          "#79c0ff"
+        ]
+      },
+      "graph-2": {
+        "role": "secondary",
+        "displayName": "Graph Under 80%",
+        "canonical": "oklch(45.4% 0.059 249.2)",
+        "tonalRamp": [
+          "#1b222c",
+          "#2c3e52",
+          "#3c5976",
+          "#4f79a0",
+          "#79c0ff"
+        ]
+      },
+      "graph-3": {
+        "role": "secondary",
+        "displayName": "Graph Under Target",
+        "canonical": "oklch(56.2% 0.077 247.6)",
+        "tonalRamp": [
+          "#1b222c",
+          "#2c3e52",
+          "#3c5976",
+          "#4f79a0",
+          "#79c0ff"
+        ]
+      },
+      "graph-4": {
+        "role": "secondary",
+        "displayName": "Graph Hit",
+        "canonical": "oklch(78.6% 0.115 246.7)",
+        "tonalRamp": [
+          "#1b222c",
+          "#2c3e52",
+          "#3c5976",
+          "#4f79a0",
+          "#79c0ff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display Figure",
+        "purpose": "The protein 'to go' figure only, in protein blue."
+      },
+      "headline": {
+        "displayName": "Score Figure",
+        "purpose": "The day score figure."
+      },
+      "title": {
+        "displayName": "Sheet Title",
+        "purpose": "Bottom-sheet titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Sentences, meal names and button labels; tabular numerals on globally."
+      },
+      "label": {
+        "displayName": "Small-Caps Header",
+        "purpose": "Panel headers, field labels and the picker title; muted, all-small-caps."
+      },
+      "data": {
+        "displayName": "Mono Data",
+        "purpose": "Figures, times, panel meta and footers, and the status line. Never sentences."
+      }
+    },
+    "shadows": [
+      {
+        "name": "none",
+        "value": "none",
+        "purpose": "The world has no drop shadows; depth is ground, panel, raised and well tones on 1px seams."
+      },
+      {
+        "name": "drawn-outline",
+        "value": "inset 0 0 0 1px var(--muted)",
+        "purpose": "Drawn outlines only (open status ring at 1.5px, today's score bar, future cells at --seam); never lift."
+      },
+      {
+        "name": "sheet-backdrop",
+        "value": "rgba(1, 4, 9, 0.7)",
+        "purpose": "Backdrop behind a modal sheet."
+      },
+      {
+        "name": "dock-glass",
+        "value": "background: rgba(13, 17, 23, 0.94); backdrop-filter: blur(12px)",
+        "purpose": "The fixed dock only."
+      },
+      {
+        "name": "dot-grid",
+        "value": "radial-gradient(circle at 1px 1px, rgba(230, 237, 243, 0.05) 1px, transparent 1.5px) 0 0 / 16px 16px",
+        "purpose": "The ground texture on body."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Every transition and entrance."
+      },
+      {
+        "name": "roll",
+        "value": "420ms, cubic ease-out (1 - (1 - t)^3)",
+        "purpose": "Numbers roll from previous to new value."
+      },
+      {
+        "name": "scale-in-place",
+        "value": "scale 420ms var(--ease-out)",
+        "purpose": "Bars and score fills scale along one axis; graph cells change colour over 420ms."
+      },
+      {
+        "name": "expand",
+        "value": "160ms var(--ease-out), scaleY 0.6 to 1 from top",
+        "purpose": "Portion picker over a tile."
+      },
+      {
+        "name": "sheet-slide",
+        "value": "220ms var(--ease-out), translateY 32px to 0 with fade",
+        "purpose": "Bottom sheet entrance."
+      },
+      {
+        "name": "toast-rise",
+        "value": "180ms var(--ease-out), translateY 8px to 0 with fade",
+        "purpose": "Undo toast entrance."
+      },
+      {
+        "name": "hover",
+        "value": "150ms var(--ease-out)",
+        "purpose": "Primary fill and photo dim on hover."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "1ms durations; rolls jump to final value",
+        "purpose": "prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "column",
+        "value": "560px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one blue fill per view: the docked Log a meal and sheet submits.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z\"/><circle cx=\"12\" cy=\"13\" r=\"3\"/></svg>Log a meal</button>",
+      "css": ".ds-btn-primary { display: flex; align-items: center; justify-content: center; gap: 10px; width: 280px; height: 52px; border: 1px solid var(--accent-edge, #388bfd); border-radius: 10px; color: #fff; font: 600 15px var(--font-ui, Geist, sans-serif); background: var(--accent, #1f6feb); cursor: pointer; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:hover { background: var(--accent-hover, #2f7cf3); } .ds-btn-primary:active { scale: 0.99; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent-edge, #388bfd); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Graphite outline for every non-primary action; only the border brightens on hover.",
+      "html": "<button class=\"ds-btn-secondary\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 20h9\"/><path d=\"M16.4 3.6a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z\"/></svg>Type</button>",
+      "css": ".ds-btn-secondary { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 84px; height: 52px; padding: 0 14px; border: 1px solid var(--seam-strong, #353c47); border-radius: 10px; color: var(--text, #e6edf3); font: 500 15px var(--font-ui, Geist, sans-serif); background: var(--panel, #151a21); cursor: pointer; } .ds-btn-secondary:hover { border-color: var(--muted, #8b949e); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--accent-edge, #388bfd); outline-offset: 2px; }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "The console panel: small-caps header with mono meta, 12px body, optional mono footer, all on 1px seams.",
+      "html": "<section class=\"ds-panel\"><header class=\"ds-panel-head\"><h2>day score</h2><span>78</span></header><div class=\"ds-panel-body\"><span class=\"ds-score\">58</span> <span class=\"ds-sofar\">so far</span></div><footer class=\"ds-panel-foot\"><span>7-day avg 95</span></footer></section>",
+      "css": ".ds-panel { width: 280px; border: 1px solid var(--seam, #262c36); border-radius: 10px; color: var(--text, #e6edf3); background: var(--panel, #151a21); font-family: var(--font-ui, Geist, sans-serif); } .ds-panel-head { display: flex; align-items: center; justify-content: space-between; min-height: 38px; padding: 0 12px; border-bottom: 1px solid var(--seam, #262c36); color: var(--muted, #8b949e); } .ds-panel-head h2 { margin: 0; font-size: 0.8rem; font-weight: 500; font-variant: all-small-caps; letter-spacing: 0.06em; } .ds-panel-head span, .ds-panel-foot { font: 400 0.75rem var(--font-mono, 'Geist Mono', monospace); } .ds-panel-body { padding: 12px; } .ds-score { font: 600 2.1rem/1 var(--font-mono, 'Geist Mono', monospace); letter-spacing: -0.02em; } .ds-sofar { color: var(--muted, #8b949e); font-size: 0.8rem; } .ds-panel-foot { padding: 8px 12px; border-top: 1px solid var(--seam, #262c36); color: var(--muted, #8b949e); }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Recessed well input with small-caps label and in-field mono unit.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">carbs</span><span class=\"ds-unit-wrap\"><input class=\"ds-input\" inputmode=\"numeric\" value=\"240\"><span class=\"ds-unit\">g</span></span></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; width: 160px; font-family: var(--font-ui, Geist, sans-serif); } .ds-field-label { color: var(--muted, #8b949e); font-size: 0.8rem; font-weight: 500; font-variant: all-small-caps; letter-spacing: 0.06em; } .ds-unit-wrap { position: relative; display: block; } .ds-input { width: 100%; min-height: 46px; padding: 0 3.2em 0 12px; border: 1px solid var(--seam-strong, #353c47); border-radius: 8px; color: var(--text, #e6edf3); font: 400 15px var(--font-mono, 'Geist Mono', monospace); background: var(--well, #10151c); } .ds-input:focus-visible { outline: 2px solid var(--accent-edge, #388bfd); outline-offset: 0; border-color: var(--accent-edge, #388bfd); } .ds-unit { position: absolute; right: 12px; top: 50%; translate: 0 -50%; color: var(--muted, #8b949e); font: 400 0.8rem var(--font-mono, 'Geist Mono', monospace); pointer-events: none; }"
+    },
+    {
+      "name": "Status Line",
+      "kind": "nav",
+      "refersTo": "status-line",
+      "description": "Mono status row: date left, streak status right, led by a ring-or-filled status dot.",
+      "html": "<header class=\"ds-status\"><span>sat 03 oct</span><span class=\"ds-streak\"><span class=\"ds-dot\"></span>18d streak · today open</span></header>",
+      "css": ".ds-status { display: flex; justify-content: space-between; align-items: center; width: 340px; min-height: 28px; color: var(--muted, #8b949e); font: 400 0.75rem var(--font-mono, 'Geist Mono', monospace); font-variant-numeric: tabular-nums; } .ds-streak { display: flex; align-items: center; gap: 6px; } .ds-dot { width: 7px; height: 7px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted, #8b949e); } .ds-dot[data-state='hit'] { background: var(--protein, #79c0ff); box-shadow: none; }"
+    },
+    {
+      "name": "Macro Row",
+      "kind": "custom",
+      "refersTo": "macro-row",
+      "description": "Mono row with a 4px mini bar in the macro's data hue; over target reads 'over' in muted, never red.",
+      "html": "<div class=\"ds-row\"><span class=\"ds-muted\">carbs</span><span class=\"ds-mini\"><span style=\"scale:0.6 1;background:var(--carbs,#e3b341)\"></span></span><span>96 g <span class=\"ds-muted\">left</span></span><span class=\"ds-muted\">/240</span></div>",
+      "css": ".ds-row { display: grid; grid-template-columns: 3.4em 1fr 6.2em 3.6em; align-items: center; gap: 10px; width: 340px; color: var(--text, #e6edf3); font: 400 0.82rem var(--font-mono, 'Geist Mono', monospace); } .ds-row > :nth-child(3), .ds-row > :nth-child(4) { text-align: right; white-space: nowrap; } .ds-muted { color: var(--muted, #8b949e); } .ds-mini { display: block; height: 4px; overflow: hidden; border-radius: 2px; background: var(--graph-0, #1b222c); } .ds-mini span { display: block; height: 100%; transform-origin: left center; transition: scale 420ms cubic-bezier(0.16, 1, 0.3, 1); }"
+    },
+    {
+      "name": "Regular Tile",
+      "kind": "custom",
+      "refersTo": "regular-tile",
+      "description": "Bare photo tile: 4:3 photo, two-line name, caption row with protein in mono and a 1x portion tab.",
+      "html": "<div class=\"ds-tile\"><button class=\"ds-tile-log\"><span class=\"ds-photo\"></span><span class=\"ds-tile-name\">Chicken curry, 2 roti</span></button><div class=\"ds-tile-meta\"><span class=\"ds-tile-protein\">38 g</span><button class=\"ds-tab\">1×</button></div></div>",
+      "css": ".ds-tile { display: flex; flex-direction: column; width: 110px; color: var(--text, #e6edf3); font-family: var(--font-ui, Geist, sans-serif); } .ds-tile-log { display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; border-radius: 6px; color: inherit; text-align: left; background: none; cursor: pointer; } .ds-photo { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 6px; background: linear-gradient(135deg, #8a4b2a, #d08a3c); transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-tile-log:hover .ds-photo { opacity: 0.88; } .ds-tile-log:active .ds-photo { outline: 2px solid var(--protein, #79c0ff); outline-offset: -2px; } .ds-tile-name { min-height: 2.5em; font-size: 0.8rem; line-height: 1.25; } .ds-tile-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; } .ds-tile-protein { color: var(--protein, #79c0ff); font: 400 0.8rem var(--font-mono, 'Geist Mono', monospace); } .ds-tab { padding: 1px 6px; border: 1px solid var(--seam-strong, #353c47); border-radius: 4px; color: var(--muted, #8b949e); font: 400 0.7rem var(--font-mono, 'Geist Mono', monospace); background: none; cursor: pointer; } .ds-tab:hover { color: var(--text, #e6edf3); border-color: var(--muted, #8b949e); } .ds-tab:focus-visible { outline: 2px solid var(--accent-edge, #388bfd); outline-offset: 2px; }"
+    },
+    {
+      "name": "Contribution Graph",
+      "kind": "custom",
+      "refersTo": "streak-graph",
+      "description": "Protein streak as week columns of square cells stepping graph-0 to graph-4; today outlined, future empty.",
+      "html": "<div class=\"ds-graph\"><span data-level=\"0\"></span><span data-level=\"1\"></span><span data-level=\"2\"></span><span data-level=\"4\"></span><span data-level=\"4\"></span><span data-level=\"3\"></span><span data-level=\"4\"></span><span data-level=\"2\"></span><span data-level=\"4\"></span><span data-level=\"4\"></span><span data-level=\"1\"></span><span data-level=\"4\"></span><span data-level=\"3\" data-today></span><span data-future></span></div>",
+      "css": ".ds-graph { display: grid; grid-template-rows: repeat(7, 14px); grid-auto-flow: column; grid-auto-columns: 14px; gap: 3px; } .ds-graph span { border-radius: 2px; background: var(--graph-0, #1b222c); transition: background-color 420ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-graph [data-level='1'] { background: var(--graph-1, #2c3e52); } .ds-graph [data-level='2'] { background: var(--graph-2, #3c5976); } .ds-graph [data-level='3'] { background: var(--graph-3, #4f79a0); } .ds-graph [data-level='4'] { background: var(--graph-4, #79c0ff); } .ds-graph [data-today] { outline: 1px solid var(--text, #e6edf3); outline-offset: 1px; } .ds-graph [data-future] { background: transparent; box-shadow: inset 0 0 0 1px var(--seam, #262c36); }"
+    },
+    {
+      "name": "Undo Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Raised strip above the dock with one line and an underlined Undo.",
+      "html": "<div class=\"ds-toast\"><span>Logged chicken curry, 2 roti</span><button class=\"ds-undo\">Undo</button></div>",
+      "css": ".ds-toast { display: flex; align-items: center; gap: 4px; width: 320px; min-height: 48px; padding: 4px 4px 4px 14px; border: 1px solid var(--seam-strong, #353c47); border-radius: 10px; color: var(--text, #e6edf3); font: 400 0.88rem var(--font-ui, Geist, sans-serif); background: var(--raised, #1b2129); } .ds-toast > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-undo { min-height: 40px; padding: 0 14px; border: 0; border-radius: 6px; color: inherit; font: 600 15px var(--font-ui, Geist, sans-serif); text-decoration: underline; text-underline-offset: 3px; background: none; cursor: pointer; } .ds-undo:hover { background: var(--panel, #151a21); } .ds-undo:focus-visible { outline: 2px solid var(--accent-edge, #388bfd); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Console",
+    "overview": "Your nutrition as a console you would build for yourself. A graphite ground carries a faint dot grid; graphite panels sit on it, joined by 1px seams, each with a small-caps header, a body, and sometimes a mono footer. Figures are monospaced and tabular. The colours that carry meaning are borrowed from syntax highlighting, and they mark data and state, never decoration. The protein streak is drawn as a contribution graph.\n\nThe game layer is the instrument's own readout: a 0–100 day score, a protein streak, a 12-week consistency graph and the next milestone. It uses the same seams, cells and figures as everything else, with nothing celebratory on top. An unfinished day is drawn as unfinished, a missed day is a dim cell, and a value over target is stated plainly in muted text.\n\nDensity is that of a tool checked one-handed at the table. It uses a single 560px column, compact 12px panel padding and 44px touch targets everywhere, including around compact controls. The only imagery is the owner's own meal photos.",
+    "keyCharacteristics": [
+      "Dark-first graphite ground (#0d1117) with a 1px dot grid at 5% opacity on a 16px pitch.",
+      "Panels on 1px seams, one elevation step, no drop shadows.",
+      "Four syntax-derived data colours: protein, kcal, carbs, fat.",
+      "One blue primary accent, used only by the primary action.",
+      "Geist for words, Geist Mono for figures, times and the status line.",
+      "Motion is in place and on one axis: numbers roll, bars scale, panels expand."
+    ],
+    "rules": [
+      {
+        "name": "The Data-Only Rule",
+        "body": "Protein, kcal, carbs and fat colours mark data and state. They are never used for ornament, backgrounds, borders or buttons.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Commit Rule",
+        "body": "The blue accent appears only on the primary action: one filled button per view, plus the checked checkbox. Every other button is a graphite outline.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Red Intake Rule",
+        "body": "Danger red is for destructive hover and system failure only. Intake over target is shown with the word \"over\" in muted text, never in red.",
+        "section": "colors"
+      },
+      {
+        "name": "The Mono Is Data Rule",
+        "body": "Geist Mono sets figures, times and the status line only. Sentences, names and buttons stay in Geist. Mono is never a costume.",
+        "section": "typography"
+      },
+      {
+        "name": "The Small Caps Header Rule",
+        "body": "Panel headers are lowercase source text set in all-small-caps, never uppercase strings, never in mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Step Rule",
+        "body": "Panel to raised is the only elevation step. Hover fills, the toast and the picker head use raised. Nothing sits above raised except a modal sheet.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Seam Not Shadow Rule",
+        "body": "Separation is a 1px seam (seam or seam-strong). If something needs to stand apart, give it a seam, not a shadow or a glow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do separate surfaces with 1px seams (seam #262c36) and convey depth only through ground, panel, raised and well tones.",
+      "Do reserve Commit Blue (#1f6feb) for the single primary action in view and the checked checkbox.",
+      "Do colour a figure by what it measures: protein #79c0ff, kcal #d2a8ff, carbs #e3b341, fat #7ee787.",
+      "Do set figures, times and the status line in Geist Mono with tabular numerals, and everything else in Geist.",
+      "Do set panel headers in muted all-small-caps at 0.8rem with +0.06em tracking.",
+      "Do draw an unfinished day as unfinished, with \"so far\", an outlined \"now\" bar, and an open status ring.",
+      "Do put every bar of a comparison on one shared scale, and draw references (such as an average) as dashed lines.",
+      "Do animate change in place, rolling numbers and scaling bars over 420ms with ease-out, and honour reduced motion.",
+      "Do keep every touch target at 44px, extending compact controls with an invisible hit area."
+    ],
+    "donts": [
+      "Don't use drop shadows, glows or a second elevation step.",
+      "Don't fill any button other than the primary action with blue, or use blue as decoration.",
+      "Don't use danger red (#f85149) for intake, totals or \"over\" values. It is only for destructive hover and system failure.",
+      "Don't set sentences, names or buttons in Geist Mono to look technical.",
+      "Don't add confetti, mascots, stickers, levels, badges or guilt copy. A missed day is a dim cell, not a scolding.",
+      "Don't break a streak mid-day or compare today's partial score against finished days as if it were complete.",
+      "Don't frame regulars as cards, or nest boxes inside the portion picker.",
+      "Don't use imagery other than the owner's meal photos."
+    ]
+  }
+}

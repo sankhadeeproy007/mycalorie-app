@@ -1,0 +1,83 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(12px + env(safe-area-inset-top)) var(--gutter) calc(var(--dock-height) + 96px + env(safe-area-inset-bottom));
+}
+
+.status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 28px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.statusLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hit {
+  color: var(--protein);
+}
+
+.streak {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* The console's status dot: a ring while today is open, filled once the target is hit. */
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
+}
+
+.dot[data-state="hit"] {
+  background: var(--protein);
+  box-shadow: none;
+}
+
+.demo {
+  padding: 2px 8px;
+  border: 1px dashed var(--seam-strong);
+  border-radius: 6px;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 10px;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.loading span {
+  height: 180px;
+  border: 1px solid var(--seam);
+  border-radius: var(--radius-panel);
+  background: linear-gradient(90deg, var(--panel), var(--raised), var(--panel));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+.loading span + span {
+  height: 120px;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}

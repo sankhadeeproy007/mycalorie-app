@@ -1,0 +1,116 @@
+.dock {
+  position: fixed;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--seam);
+  background: rgba(13, 17, 23, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.inner {
+  display: flex;
+  gap: 8px;
+  max-width: calc(560px - 2 * var(--gutter));
+  margin: 0 auto;
+}
+
+.primary,
+.secondary,
+.reading {
+  display: flex;
+  align-items: center;
+  height: var(--dock-height);
+  border-radius: var(--radius-panel);
+}
+
+.primary {
+  flex: 1;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--accent-edge);
+  color: #fff;
+  font-weight: 600;
+  background: var(--accent);
+  transition: background-color 150ms var(--ease-out);
+}
+
+.primary:hover {
+  background: var(--accent-hover);
+}
+
+.primary:active {
+  scale: 0.99;
+}
+
+.secondary {
+  flex: none;
+  justify-content: center;
+  gap: 6px;
+  min-width: 84px;
+  padding: 0 14px;
+  border: 1px solid var(--seam-strong);
+  font-weight: 500;
+  background: var(--panel);
+}
+
+.secondary:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.secondary:disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+}
+
+.reading {
+  flex: 1;
+  gap: 12px;
+  padding: 0 10px;
+  border: 1px solid var(--seam-strong);
+  background: var(--panel);
+}
+
+.thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.readingText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+/* Indeterminate: a segment travelling along one axis. */
+.progress {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--graph-0);
+}
+
+.progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  border-radius: inherit;
+  background: var(--protein);
+  animation: travel 1.1s var(--ease-out) infinite;
+}
+
+@keyframes travel {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 300% 0;
+  }
+}
