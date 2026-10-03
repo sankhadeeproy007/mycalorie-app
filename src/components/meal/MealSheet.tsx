@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Plus } from "lucide-react";
 import type { PreparedImage } from "@/lib/image";
 import { fromEstimate, itemsFromRegular, totalMacros } from "@/lib/items";
+import { blurOnEnter, submitOnEnter } from "@/lib/keyboard";
 import { requestAnalysis, requestEstimate, type AnalyzeFailure } from "@/lib/meal-api";
 import type { Analysis, LabelReading, Macros, MealItem, ProductInfo, SavedMeal } from "@/lib/types";
 import { SwitchRow } from "../SwitchRow";
@@ -158,6 +159,8 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
               placeholder={photo ? "e.g. 3 eggs, 1 tsp ghee" : "e.g. 2 rotis and a katori of dal"}
               rows={2}
               maxLength={300}
+              enterKeyHint="go"
+              onKeyDown={submitOnEnter}
               data-autofocus={photo ? undefined : ""}
               required={!photo}
             />
@@ -281,6 +284,8 @@ function ReviewStage({ review, onChange, regulars, outside, photo, onLog, onLogR
           onChange={(event) => onChange({ ...review, name: event.target.value })}
           placeholder="e.g. Rajma chawal"
           autoComplete="off"
+          enterKeyHint="done"
+          onKeyDown={blurOnEnter}
           data-autofocus={review.name ? undefined : ""}
           required
         />

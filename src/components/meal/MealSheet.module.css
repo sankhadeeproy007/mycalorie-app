@@ -2,6 +2,10 @@
   padding: 0 var(--gutter) calc(16px + env(safe-area-inset-bottom));
 }
 
+:global(html[data-keyboard]) .flow {
+  padding-bottom: 16px;
+}
+
 .stage {
   display: flex;
   flex-direction: column;

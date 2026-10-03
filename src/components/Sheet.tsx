@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { nextOnEnter, revealWhenFocused } from "@/lib/keyboard";
 import type { Macros } from "@/lib/types";
 import styles from "./Sheet.module.css";
 
@@ -34,6 +35,7 @@ export function Sheet({ open, labelledBy, onClose, children }: SheetProps) {
       aria-labelledby={labelledBy}
       onClose={onClose}
       onClick={(event) => event.target === event.currentTarget && onClose()}
+      onFocus={(event) => revealWhenFocused(event.target)}
     >
       {open && children}
     </dialog>
@@ -81,7 +83,7 @@ export function MacroFields({ legend, values, onChange, autofocus, required = []
   return (
     <fieldset className={styles.macros}>
       <legend className="visually-hidden">{legend}</legend>
-      {MACRO_FIELDS.map(({ key, label, unit }) => (
+      {MACRO_FIELDS.map(({ key, label, unit }, index) => (
         <label key={key} className={`${styles.field} ${key === "protein" ? styles.primaryField : ""}`}>
           <span className={styles.fieldLabel}>{label}</span>
           <span className={styles.unitInput}>
@@ -94,6 +96,8 @@ export function MacroFields({ legend, values, onChange, autofocus, required = []
               }
               required={required.includes(key)}
               data-autofocus={autofocus === key ? "" : undefined}
+              enterKeyHint={index < MACRO_FIELDS.length - 1 ? "next" : "done"}
+              onKeyDown={nextOnEnter}
             />
             <span className={styles.unit}>{unit}</span>
           </span>

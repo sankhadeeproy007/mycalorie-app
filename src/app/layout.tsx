@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ViewportSync } from "@/components/ViewportSync";
 import "./globals.css";
 
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
@@ -14,12 +15,17 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#0d1117",
   viewportFit: "cover",
+  // Android Chrome shrinks the page for the keyboard; iOS ignores this and ViewportSync covers it.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <ViewportSync />
+        {children}
+      </body>
     </html>
   );
 }

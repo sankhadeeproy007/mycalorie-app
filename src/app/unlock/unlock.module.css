@@ -2,7 +2,8 @@
   display: grid;
   place-items: center;
   min-height: 100dvh;
-  padding: calc(16px + env(safe-area-inset-top)) var(--gutter) calc(16px + env(safe-area-inset-bottom));
+  padding: calc(16px + env(safe-area-inset-top)) var(--gutter)
+    calc(16px + max(env(safe-area-inset-bottom), var(--keyboard-inset, 0px)));
 }
 
 .panel {

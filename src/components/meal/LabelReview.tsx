@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { formatAmount } from "@/lib/format";
 import { roundMacros, scaleMacros } from "@/lib/items";
 import type { LabelReading, Macros, MealItem } from "@/lib/types";
+import { blurOnEnter } from "@/lib/keyboard";
 import { ItemRow } from "./ItemRow";
 import type { LogEntry } from "./MealSheet";
 import styles from "./MealSheet.module.css";
@@ -74,6 +75,8 @@ export function LabelReview({ reading, photoFile, photoUrl, onLog }: LabelReview
             onChange={(event) => setName(event.target.value)}
             placeholder="e.g. MuscleBlaze whey"
             autoComplete="off"
+            enterKeyHint="done"
+            onKeyDown={blurOnEnter}
             data-autofocus={reading.productName ? undefined : ""}
             required
           />
