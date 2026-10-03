@@ -20,6 +20,20 @@ Without a key, or when the free allowance runs out, the app falls back to enteri
 
 For working on the review screens without a key, run `MOCK_GEMINI=1 npm run dev`: photo reads return a sample omelette, a hint containing "label" returns a sample nutrition label, and text estimates return one sample item. The mock never runs in production.
 
+## Comparing AI models on your own meals
+
+`npm run compare` sends the same photos to Gemini Flash and to Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5, using the exact instructions the app sends. It then writes a side-by-side report, with each model's items, protein and real cost per photo, to `compare/report-*.html`.
+
+1. Put photos in `compare/photos/`. JPEG, PNG and iPhone HEIC all work, and they're resized the same way the app resizes them.
+2. Optionally note what you actually ate in `compare/notes.txt`, one line per photo, keyed by file name without its extension. A protein figure after `|` lets the report score each model:
+   ```
+   IMG_1234: 3 egg omelette, 2 slices brown bread | 26
+   IMG_1240: home thali - dal, 2 rotis, rice, sabzi | 24
+   ```
+3. Add `GEMINI_API_KEY` and `ANTHROPIC_API_KEY` to `.env.local`, then run `npm run compare`. Before spending anything it shows the estimated Claude cost and asks you to confirm.
+
+Options: `--models gemini,sonnet` runs a subset, `--limit 10` caps the number of photos, `--effort low|medium|high` sets Claude's effort (default `low`, which keeps cost down), and `--yes` skips the confirmation. The `compare/` folder is git-ignored, so your photos stay on your machine.
+
 ## Access code
 
 The deployed app opens on an access-code screen. Set two environment variables (in Vercel: Project → Settings → Environment Variables):

@@ -1,5 +1,5 @@
 import "server-only";
-import { AnalysisError } from "./analyze-meal";
+import { AnalysisError } from "./analysis-error";
 
 const STATUS_BY_CODE: Record<AnalysisError["code"], number> = {
   not_configured: 503,

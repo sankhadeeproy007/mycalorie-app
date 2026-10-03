@@ -48,3 +48,6 @@ next-env.d.ts
 .impeccable/review/
 .impeccable/mocks/
 .impeccable/hook.cache.json
+
+# model comparison: personal photos, notes and reports
+/compare/
