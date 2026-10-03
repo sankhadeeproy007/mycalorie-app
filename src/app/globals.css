@@ -37,10 +37,20 @@
   --dock-height: 52px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Space kept clear of the status bar / Dynamic Island. */
+  --top-inset: env(safe-area-inset-top, 0px);
+
   --font-ui: var(--font-geist), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   color-scheme: dark;
+}
+
+/* Installed to the home screen the app draws under the translucent status bar; never let content start inside it. */
+@media (display-mode: standalone) {
+  :root {
+    --top-inset: max(env(safe-area-inset-top, 0px), 54px);
+  }
 }
 
 *,

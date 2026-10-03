@@ -16,3 +16,27 @@
   border-color: var(--muted);
   color: var(--text);
 }
+
+.hide {
+  position: relative;
+  margin-right: -6px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+}
+
+/* 44px touch target around the small link. */
+.hide::before {
+  content: "";
+  position: absolute;
+  inset: -10px -4px;
+}
+
+.hide:hover {
+  color: var(--text);
+}

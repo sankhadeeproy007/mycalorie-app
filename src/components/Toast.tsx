@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import styles from "./Toast.module.css";
 
-export type UndoNotice = { key: string; message: string; undo: () => void };
+export type UndoNotice = { key: string; message: string; undo?: () => void };
 
 const VISIBLE_MS = 5000;
 
@@ -24,16 +24,18 @@ export function Toast({ notice, onDismiss }: ToastProps) {
       {notice && (
         <div key={notice.key} className={styles.toast}>
           <span className={styles.message}>{notice.message}</span>
-          <button
-            type="button"
-            className={styles.undo}
-            onClick={() => {
-              notice.undo();
-              onDismiss();
-            }}
-          >
-            Undo
-          </button>
+          {notice.undo && (
+            <button
+              type="button"
+              className={styles.undo}
+              onClick={() => {
+                notice.undo?.();
+                onDismiss();
+              }}
+            >
+              Undo
+            </button>
+          )}
         </div>
       )}
     </div>

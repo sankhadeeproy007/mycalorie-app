@@ -2,7 +2,7 @@
 .sheet {
   width: 100%;
   max-width: 560px;
-  max-height: min(90dvh, calc(var(--visual-height, 100dvh) - 12px));
+  max-height: min(90dvh, calc(var(--visual-height, 100dvh) - 12px), calc(100dvh - var(--top-inset) - 8px));
   margin: auto auto var(--keyboard-inset, 0px);
   overscroll-behavior: contain;
   transition: margin-bottom 180ms var(--ease-out);

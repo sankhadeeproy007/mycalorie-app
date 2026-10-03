@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { DaySheet } from "@/components/DaySheet";
 import { DeveloperPanel } from "@/components/DeveloperPanel";
@@ -62,6 +62,18 @@ function StreakStatus({ current, hitToday, hasTarget }: { current: number; hitTo
   );
 }
 
+const DEVELOPER_KEY = "mycalorie:developer";
+const SECRET_TAPS = 5;
+const SECRET_TAP_WINDOW_MS = 2500;
+
+function readDeveloperShown(): boolean {
+  try {
+    return typeof window !== "undefined" && window.localStorage.getItem(DEVELOPER_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
 function formatStatusDate(key: string): string {
   const [y, m, d] = key.split("-").map(Number);
   return new Date(y, m - 1, d)
@@ -75,6 +87,28 @@ export function HomeScreen() {
   const today = useToday();
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
   const [openDay, setOpenDay] = useState<string | null>(null);
+  const [developerShown, setDeveloperShown] = useState(readDeveloperShown);
+  const dateTaps = useRef<number[]>([]);
+
+  /** Five taps on the date within a couple of seconds reveal the developer options. */
+  const tapDate = (event: MouseEvent) => {
+    const now = event.timeStamp;
+    dateTaps.current = [...dateTaps.current.filter((at) => now - at < SECRET_TAP_WINDOW_MS), now];
+    if (dateTaps.current.length < SECRET_TAPS || developerShown) return;
+    dateTaps.current = [];
+    showDeveloper(true);
+    setNotice({ key: `dev-${now}`, message: "Developer options unlocked, at the bottom" });
+  };
+
+  const showDeveloper = (shown: boolean) => {
+    setDeveloperShown(shown);
+    try {
+      if (shown) window.localStorage.setItem(DEVELOPER_KEY, "on");
+      else window.localStorage.removeItem(DEVELOPER_KEY);
+    } catch {
+      // Without storage the panel just won't stay revealed after a reload.
+    }
+  };
   const [comparisonRevision, setComparisonRevision] = useState(0);
   const refreshComparison = () => setComparisonRevision((value) => value + 1);
   const [notice, setNotice] = useState<UndoNotice | null>(null);
@@ -176,7 +210,7 @@ export function HomeScreen() {
       <main className={styles.page} aria-busy={view === null}>
         <header className={`mono ${styles.status}`}>
           <span className={styles.statusLeft}>
-            {view && formatStatusDate(today)}
+            <span onClick={tapDate}>{view && formatStatusDate(today)}</span>
             {view && isDemo() && (
               <button type="button" className={styles.demo} onClick={() => setDemoMode(false)}>
                 demo data · exit
@@ -207,7 +241,17 @@ export function HomeScreen() {
               onToggle={setKeepForComparison}
               revision={comparisonRevision}
             />
-            <DeveloperPanel demo={isDemo()} onDemoChange={setDemoMode} onResetDemo={resetDemoData} />
+            {(developerShown || isDemo()) && (
+              <DeveloperPanel
+                demo={isDemo()}
+                onDemoChange={setDemoMode}
+                onResetDemo={resetDemoData}
+                onHide={() => {
+                  setDemoMode(false);
+                  showDeveloper(false);
+                }}
+              />
+            )}
           </>
         ) : (
           <div className={styles.loading} aria-hidden="true">

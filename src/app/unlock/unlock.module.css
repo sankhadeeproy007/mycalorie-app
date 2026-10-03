@@ -2,7 +2,7 @@
   display: grid;
   place-items: center;
   min-height: 100dvh;
-  padding: calc(16px + env(safe-area-inset-top)) var(--gutter)
+  padding: calc(16px + var(--top-inset)) var(--gutter)
     calc(16px + max(env(safe-area-inset-bottom), var(--keyboard-inset, 0px)));
 }
 

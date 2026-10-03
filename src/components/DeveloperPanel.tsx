@@ -10,14 +10,24 @@ type DeveloperPanelProps = {
   demo: boolean;
   onDemoChange: (on: boolean) => void;
   onResetDemo: () => void;
+  /** Turns demo data off and tucks the panel away again. */
+  onHide: () => void;
 };
 
 /** Testing aids. Demo data lives in its own storage, so real logs are never touched. */
-export function DeveloperPanel({ demo, onDemoChange, onResetDemo }: DeveloperPanelProps) {
+export function DeveloperPanel({ demo, onDemoChange, onResetDemo, onHide }: DeveloperPanelProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
 
   return (
-    <Panel title="developer" headingId="developer-heading">
+    <Panel
+      title="developer"
+      headingId="developer-heading"
+      meta={
+        <button type="button" className={styles.hide} onClick={onHide}>
+          hide
+        </button>
+      }
+    >
       <SwitchRow
         label="Demo data"
         hint="Sample Indian meals, regulars and 12 weeks of history to try things on. Your real logs stay as they are and come back when you switch this off."
