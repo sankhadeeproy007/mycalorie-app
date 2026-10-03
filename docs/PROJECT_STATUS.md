@@ -94,6 +94,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 - Fields are ≥16px, so iOS doesn't zoom on focus.
 - `ViewportSync` publishes `--keyboard-inset` and `--visual-height`, so sheets sit above the keyboard. Return keys go next/done/go, ignoring keyboards that are still composing.
 - When installed, the top keeps at least 54px clear of the status bar (`--top-inset`).
+- While any sheet is open the page behind it is frozen (`src/lib/scroll-lock.ts` pins the body), because iOS otherwise scrolls the page under a modal dialog. Closing restores the exact scroll position.
 - PWA manifest and generated icons (`icon.tsx`, `apple-icon.tsx`).
 
 **Model comparison:**

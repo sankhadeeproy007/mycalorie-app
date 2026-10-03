@@ -185,7 +185,8 @@ export function HomeScreen() {
       const photo = photoFile ? await shelfThumbnail(photoFile).catch(() => undefined) : undefined;
       regularId = saveMeal({ ...saveAs, photo }).id;
     }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // After the sheet has released the page, so the scroll isn't undone by the restore.
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
     const log = logMeal({ name, macros, items, savedMealId: regularId });
     announceLog(log);
     // Demo meals are not real meals, so they never join the comparison set.

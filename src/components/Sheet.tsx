@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { nextOnEnter, revealWhenFocused } from "@/lib/keyboard";
+import { lockPageScroll } from "@/lib/scroll-lock";
 import type { Macros } from "@/lib/types";
 import styles from "./Sheet.module.css";
 
@@ -27,6 +28,9 @@ export function Sheet({ open, labelledBy, onClose, children }: SheetProps) {
     }
     if (!open && dialog.open) dialog.close();
   }, [open]);
+
+  // Layout effect: the page is pinned before paint and released in the same commit that closes the sheet.
+  useLayoutEffect(() => (open ? lockPageScroll() : undefined), [open]);
 
   return (
     <dialog
