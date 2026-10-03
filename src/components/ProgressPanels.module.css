@@ -100,26 +100,46 @@
   gap: 3px;
 }
 
+.graph {
+  cursor: pointer;
+}
+
 .cell {
   aspect-ratio: 1;
+  padding: 0;
+  border: 0;
   border-radius: 2px;
   background: var(--graph-0);
   transition: background-color 420ms var(--ease-out);
 }
 
-.cell[data-level="1"] {
+.cell:disabled {
+  cursor: default;
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--accent-edge);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.cell[data-level="1"],
+.legendCell[data-level="1"] {
   background: var(--graph-1);
 }
 
-.cell[data-level="2"] {
+.cell[data-level="2"],
+.legendCell[data-level="2"] {
   background: var(--graph-2);
 }
 
-.cell[data-level="3"] {
+.cell[data-level="3"],
+.legendCell[data-level="3"] {
   background: var(--graph-3);
 }
 
-.cell[data-level="4"] {
+.cell[data-level="4"],
+.legendCell[data-level="4"] {
   background: var(--graph-4);
 }
 
@@ -131,4 +151,24 @@
 .cell[data-future] {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--seam);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.legendCell {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--graph-0);
+}
+
+.legendCell + span:not(.legendCell) {
+  margin: 0 4px 0 2px;
 }

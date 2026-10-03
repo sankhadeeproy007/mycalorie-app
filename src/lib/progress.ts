@@ -52,7 +52,7 @@ export function dayScore(eaten: Macros, targets: Targets): number | null {
   return Math.round((score / weight) * 100);
 }
 
-function shiftDay(key: string, offset: number): string {
+export function shiftDay(key: string, offset: number): string {
   const [y, m, d] = key.split("-").map(Number);
   return dayKey(new Date(y, m - 1, d + offset));
 }

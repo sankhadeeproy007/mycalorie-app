@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
+import { DaySheet } from "@/components/DaySheet";
 import { Dock } from "@/components/Dock";
 import { MealSheet, type LogEntry, type PhotoCapture, type SheetRequest } from "@/components/meal/MealSheet";
 import { addSample, removeSampleForLog } from "@/lib/comparison-store";
@@ -69,6 +70,7 @@ export function HomeScreen() {
   const state = useAppState();
   const today = useToday();
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
+  const [openDay, setOpenDay] = useState<string | null>(null);
   const [comparisonRevision, setComparisonRevision] = useState(0);
   const refreshComparison = () => setComparisonRevision((value) => value + 1);
   const [notice, setNotice] = useState<UndoNotice | null>(null);
@@ -180,7 +182,13 @@ export function HomeScreen() {
             <ProteinPanel totals={view.totals} targets={view.targets} onEditTargets={() => setEditingTargets(true)} />
             <div className={styles.split}>
               <ScorePanel score={view.score} recent={view.recentScores} />
-              <StreakPanel graph={view.graph} streaks={view.streaks} milestone={view.milestone} today={today} />
+              <StreakPanel
+                graph={view.graph}
+                streaks={view.streaks}
+                milestone={view.milestone}
+                today={today}
+                onOpenDay={setOpenDay}
+              />
             </div>
             <Regulars meals={view.regulars} onLog={logRegular} onAdjust={(regular) => setSheet({ kind: "adjust", regular })} />
             <EatenToday logs={view.todaysLogs} onRemove={removeFromToday} onSaveToRegulars={addToRegulars} />
@@ -210,6 +218,16 @@ export function HomeScreen() {
         }}
         onClose={() => setSheet(null)}
       />
+      {state && (
+        <DaySheet
+          day={openDay}
+          today={today}
+          logs={state.logs}
+          targets={state.settings.targets}
+          onNavigate={setOpenDay}
+          onClose={() => setOpenDay(null)}
+        />
+      )}
       {state && (
         <TargetsSheet
           open={editingTargets}

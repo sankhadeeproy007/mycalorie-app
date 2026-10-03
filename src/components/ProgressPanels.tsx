@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, type KeyboardEvent, type MouseEvent } from "react";
 import type { GraphCell, NextMilestone, PastScore, Streaks } from "@/lib/progress";
 import { useRolledNumber } from "@/lib/use-rolled-number";
 import { Panel } from "./Panel";
@@ -78,10 +79,46 @@ type StreakPanelProps = {
   streaks: Streaks;
   milestone: NextMilestone | null;
   today: string;
+  onOpenDay: (day: string) => void;
 };
 
-/** The protein streak as a contribution graph: one column per week, one cell per day. */
-export function StreakPanel({ graph, streaks, milestone, today }: StreakPanelProps) {
+const WEEK = 7;
+
+/**
+ * The protein streak as a contribution graph: one column per week, one cell per day.
+ * Cells are too small to hit reliably, so a tap opens the nearest day (gaps included)
+ * and the day sheet has arrows to step to a neighbour.
+ */
+export function StreakPanel({ graph, streaks, milestone, today, onOpenDay }: StreakPanelProps) {
+  const [focusDay, setFocusDay] = useState(today);
+  const days = graph.flat();
+
+  const openFromPointer = (event: MouseEvent<HTMLDivElement>) => {
+    // Keyboard activation arrives as a click with no pointer position; the focused cell says which day.
+    const target = event.target as HTMLElement;
+    if (event.detail === 0) {
+      const day = target.dataset.day;
+      if (day) onOpenDay(day);
+      return;
+    }
+    const box = event.currentTarget.getBoundingClientRect();
+    const column = Math.min(graph.length - 1, Math.max(0, Math.floor(((event.clientX - box.left) / box.width) * graph.length)));
+    const row = Math.min(WEEK - 1, Math.max(0, Math.floor(((event.clientY - box.top) / box.height) * WEEK)));
+    const cell = graph[column][row];
+    if (!cell.future) onOpenDay(cell.day);
+  };
+
+  const moveFocus = (event: KeyboardEvent<HTMLDivElement>) => {
+    const step = { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -WEEK, ArrowRight: WEEK }[event.key];
+    if (step === undefined) return;
+    event.preventDefault();
+    const index = days.findIndex((cell) => cell.day === focusDay);
+    const next = days[index + step];
+    if (!next || next.future) return;
+    setFocusDay(next.day);
+    event.currentTarget.querySelector<HTMLButtonElement>(`[data-day="${next.day}"]`)?.focus();
+  };
+
   return (
     <Panel
       title={`${graph.length} weeks`}
@@ -100,20 +137,35 @@ export function StreakPanel({ graph, streaks, milestone, today }: StreakPanelPro
         </>
       }
     >
-      <div className={styles.graph} role="img" aria-label={graphSummary(streaks, milestone)}>
+      <p className="visually-hidden">{graphSummary(streaks, milestone)} Choose a day to see what you ate.</p>
+      <div className={styles.graph} role="group" aria-label="Protein by day" onClick={openFromPointer} onKeyDown={moveFocus}>
         {graph.map((week) =>
           week.map((cell, weekday) => (
-            <span
+            <button
+              type="button"
               key={cell.day}
               className={styles.cell}
+              data-day={cell.day}
               data-level={cell.future ? undefined : cell.level}
               data-today={cell.day === today ? "" : undefined}
               data-future={cell.future ? "" : undefined}
-              title={cell.future ? undefined : `${WEEKDAYS[weekday]} ${cell.day}: ${LEVEL_TEXT[cell.level]}`}
+              disabled={cell.future}
+              tabIndex={cell.day === focusDay ? 0 : -1}
+              aria-label={`${WEEKDAYS[weekday]} ${cell.day}: ${LEVEL_TEXT[cell.level]}`}
             />
           )),
         )}
       </div>
+      <p className={`mono ${styles.legend}`} aria-hidden="true">
+        <span className={styles.legendCell} data-level={0} />
+        <span>none</span>
+        {[1, 2, 3].map((level) => (
+          <span key={level} className={styles.legendCell} data-level={level} />
+        ))}
+        <span>under</span>
+        <span className={styles.legendCell} data-level={4} />
+        <span>hit</span>
+      </p>
     </Panel>
   );
 }
