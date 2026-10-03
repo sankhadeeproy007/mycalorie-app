@@ -5,7 +5,8 @@ import { Plus } from "lucide-react";
 import type { PreparedImage } from "@/lib/image";
 import { fromEstimate, itemsFromRegular, totalMacros } from "@/lib/items";
 import { requestAnalysis, requestEstimate, type AnalyzeFailure } from "@/lib/meal-api";
-import type { LabelReading, Macros, MealItem, ProductInfo, SavedMeal } from "@/lib/types";
+import type { Analysis, LabelReading, Macros, MealItem, ProductInfo, SavedMeal } from "@/lib/types";
+import { SwitchRow } from "../SwitchRow";
 import { EMPTY_MACRO_VALUES, MacroFields, parseAmount, Sheet, SheetHeader, type MacroValues } from "../Sheet";
 import { AddItemPanel } from "./AddItemPanel";
 import { FAILURE_COPY } from "./failure-copy";
@@ -20,6 +21,9 @@ export type SheetRequest =
   | { kind: "text"; failure?: AnalyzeFailure }
   | { kind: "adjust"; regular: SavedMeal };
 
+/** The photo as sent and what the AI said about it, before any correction. */
+export type PhotoCapture = { image: PreparedImage; hint: string; outside: boolean; estimate: Analysis | null };
+
 /** What to log, already as eaten; `saveAs` also keeps it as a regular. */
 export type LogEntry = {
   name: string;
@@ -28,6 +32,8 @@ export type LogEntry = {
   savedMealId?: string;
   photoFile?: File;
   saveAs?: { name: string; macros: Macros; items?: MealItem[]; product?: ProductInfo };
+  /** Present when the meal came from a photo; kept for model comparison if that's switched on. */
+  capture?: PhotoCapture;
 };
 
 type MealSheetProps = {
@@ -99,8 +105,11 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
   const [stage, setStage] = useState<Stage>(() => initialStage(request));
   const [hint, setHint] = useState("");
   const [outside, setOutside] = useState(false);
+  const [estimate, setEstimate] = useState<Analysis | null>(null);
 
   const photo = request.kind === "photo" ? request : null;
+  const logWithCapture = (entry: LogEntry) =>
+    onLog(photo ? { ...entry, capture: { image: photo.image, hint: hint.trim(), outside, estimate } } : entry);
   const regularsById = new Map(regulars.map((regular) => [regular.id, regular]));
 
   const startReview = (name: string, items: MealItem[], matched?: SavedMeal) =>
@@ -113,6 +122,7 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
       const result = await requestAnalysis(photo.image, { hint: hint.trim(), outside, regulars });
       if (!result.ok) return setStage({ name: "compose", failure: result.reason });
       const analysis = result.value;
+      setEstimate(analysis);
       if (analysis.kind === "label") return setStage({ name: "label", reading: analysis.label });
       const matched = analysis.matchedRegularId ? regularsById.get(analysis.matchedRegularId) : undefined;
       return startReview(analysis.name, analysis.items.map(fromEstimate), matched);
@@ -152,7 +162,12 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
               required={!photo}
             />
           </label>
-          <OutsideSwitch on={outside} onChange={setOutside} />
+          <SwitchRow
+            label="Outside food"
+            hint="Restaurant, dhaba, street food or delivery: assumes more oil and bigger portions"
+            on={outside}
+            onChange={setOutside}
+          />
 
           {stage.failure && (
             <p className={styles.failure} role="alert">
@@ -183,7 +198,7 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
       )}
 
       {stage.name === "label" && (
-        <LabelReview reading={stage.reading} photoFile={photo?.file} photoUrl={photo?.image.dataUrl} onLog={onLog} />
+        <LabelReview reading={stage.reading} photoFile={photo?.file} photoUrl={photo?.image.dataUrl} onLog={logWithCapture} />
       )}
 
       {stage.name === "review" && (
@@ -193,25 +208,11 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
           regulars={regulars}
           outside={outside}
           photo={photo}
-          onLog={onLog}
+          onLog={logWithCapture}
           onLogRegular={onLogRegular}
         />
       )}
     </div>
-  );
-}
-
-function OutsideSwitch({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
-  return (
-    <button type="button" role="switch" aria-checked={on} className={styles.switchRow} onClick={() => onChange(!on)}>
-      <span className={styles.switchText}>
-        <span className={styles.switchLabel}>Outside food</span>
-        <span className={styles.switchHint}>Restaurant, dhaba, street food or delivery: assumes more oil and bigger portions</span>
-      </span>
-      <span className={styles.switchTrack} aria-hidden="true">
-        <span className={styles.switchThumb} />
-      </span>
-    </button>
   );
 }
 

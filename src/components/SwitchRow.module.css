@@ -1,0 +1,60 @@
+/* A whole row is the target. */
+.row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--seam);
+  border-radius: var(--radius-control);
+  text-align: left;
+  background: var(--well);
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.label {
+  font-weight: 500;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.track {
+  flex: none;
+  position: relative;
+  width: 40px;
+  height: 24px;
+  border: 1px solid var(--seam-strong);
+  border-radius: 999px;
+  background: var(--raised);
+  transition: background-color 150ms var(--ease-out);
+}
+
+.thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: translate 150ms var(--ease-out), background-color 150ms var(--ease-out);
+}
+
+.row[aria-checked="true"] .track {
+  border-color: var(--accent-edge);
+  background: var(--accent);
+}
+
+.row[aria-checked="true"] .thumb {
+  translate: 16px 0;
+  background: #fff;
+}

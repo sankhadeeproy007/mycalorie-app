@@ -1,0 +1,58 @@
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.size {
+  flex: 1;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.export,
+.clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-control);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.export {
+  border: 1px solid var(--seam-strong);
+  background: var(--raised);
+}
+
+.export:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+/* Destructive stays outlined and quiet; the second tap is the confirmation. */
+.clear {
+  border: 1px dashed var(--seam-strong);
+  color: var(--muted);
+  background: none;
+}
+
+.clear:hover:not(:disabled) {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.export:disabled,
+.clear:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.message {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}

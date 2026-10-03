@@ -7,7 +7,10 @@
  *   npm run compare -- --models gemini,sonnet --limit 10
  *   npm run compare -- --effort medium --yes
  *
- * Put photos in compare/photos/ (JPEG, PNG, or iPhone HEIC) and, optionally,
+ * Either export the photos the app kept ("model comparison" panel → Export)
+ * and run `npm run compare -- --from mycalorie-comparison-<date>.json`, which
+ * scores every model against what you logged after correcting the estimate;
+ * or put photos in compare/photos/ (JPEG, PNG, or iPhone HEIC) and, optionally,
  * what you actually ate in compare/notes.txt, one line per photo:
  *
  *   IMG_1234: 3 egg omelette, 2 slices toast | 26
@@ -22,9 +25,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, extname, join } from "node:path";
+import { basename, extname, join, relative } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { interpretPhoto, PHOTO_SCHEMA, photoInstructions, type RawPhoto } from "../src/lib/meal-prompt";
+import type { ComparisonExport } from "../src/lib/comparison-store";
+import { interpretPhoto, PHOTO_SCHEMA, photoInstructions, type MealContext, type RawPhoto } from "../src/lib/meal-prompt";
 import { callGemini, DEFAULT_GEMINI_MODEL } from "../src/lib/providers/gemini";
 import type { Analysis } from "../src/lib/types";
 
@@ -81,13 +85,39 @@ const MODELS: Record<string, ModelSpec> = {
 
 const TYPICAL_INPUT_TOKENS = 1800;
 
+/** The column for what Gemini said inside the app, before corrections. Not selectable; it isn't re-run. */
+const APP_SPEC: ModelSpec = {
+  label: "In the app (Gemini, before your fixes)",
+  provider: "gemini",
+  id: "app",
+  price: { input: 0, output: 0 },
+  typicalOutput: 0,
+  free: true,
+};
+
+const specOf = (name: string) => (name === APP_COLUMN ? APP_SPEC : MODELS[name]);
+
 type Usage = { inputTokens: number; outputTokens: number };
 
 type Outcome =
   | { ok: true; analysis: Analysis; usage: Usage; cost: number; ms: number }
   | { ok: false; error: string; ms: number; cost: number };
 
-type PhotoRun = { key: string; file: string; note?: string; protein?: number; outcomes: Record<string, Outcome> };
+/** One photo to test: where its JPEG is, what's known to be right, and what the app saw at the time. */
+type Job = {
+  key: string;
+  label: string;
+  imagePath: string;
+  note?: string;
+  protein?: number;
+  context: MealContext;
+  /** Gemini's answer inside the app, before you corrected it (export mode only). */
+  appEstimate?: Analysis | null;
+};
+
+type PhotoRun = Omit<Job, "context"> & { hint?: string; outside?: boolean; outcomes: Record<string, Outcome> };
+
+const APP_COLUMN = "app";
 
 /* Setup */
 
@@ -110,7 +140,7 @@ function parseArgs(argv: string[]) {
   const effort = (value("--effort") ?? "low") as Effort;
   if (!["low", "medium", "high"].includes(effort)) throw new Error("--effort must be low, medium or high");
   const limit = value("--limit") ? Number(value("--limit")) : Infinity;
-  return { models, effort, limit, yes: argv.includes("--yes") };
+  return { models, effort, limit, from: value("--from"), yes: argv.includes("--yes") };
 }
 
 function readNotes(): Map<string, { note: string; protein?: number }> {
@@ -151,16 +181,16 @@ function preparePhoto(file: string): string {
 const costOf = (spec: ModelSpec, usage: Usage) =>
   (usage.inputTokens * spec.price.input + usage.outputTokens * spec.price.output) / 1_000_000;
 
-async function askGemini(spec: ModelSpec, image: string): Promise<{ raw: RawPhoto; usage: Usage }> {
+async function askGemini(spec: ModelSpec, image: string, context: MealContext): Promise<{ raw: RawPhoto; usage: Usage }> {
   const { data, usage } = await callGemini<RawPhoto>(
-    [{ inline_data: { mime_type: "image/jpeg", data: image } }, { text: photoInstructions({}) }],
+    [{ inline_data: { mime_type: "image/jpeg", data: image } }, { text: photoInstructions(context) }],
     PHOTO_SCHEMA,
     { apiKey: process.env.GEMINI_API_KEY, model: spec.id },
   );
   return { raw: data, usage };
 }
 
-async function askClaude(client: Anthropic, spec: ModelSpec, image: string, effort: Effort) {
+async function askClaude(client: Anthropic, spec: ModelSpec, image: string, context: MealContext, effort: Effort) {
   const response = await client.messages.create({
     model: spec.id,
     max_tokens: 8000,
@@ -173,7 +203,7 @@ async function askClaude(client: Anthropic, spec: ModelSpec, image: string, effo
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: "image/jpeg", data: image } },
-          { type: "text", text: photoInstructions({}) },
+          { type: "text", text: photoInstructions(context) },
         ],
       },
     ],
@@ -196,15 +226,21 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-async function runModel(name: string, image: string, client: Anthropic | null, effort: Effort): Promise<Outcome> {
+async function runModel(
+  name: string,
+  image: string,
+  context: MealContext,
+  client: Anthropic | null,
+  effort: Effort,
+): Promise<Outcome> {
   const spec = MODELS[name];
   const started = Date.now();
   try {
     const { raw, usage } =
-      spec.provider === "gemini" ? await askGemini(spec, image) : await askClaude(client!, spec, image, effort);
+      spec.provider === "gemini" ? await askGemini(spec, image, context) : await askClaude(client!, spec, image, context, effort);
     const cost = spec.free ? 0 : costOf(spec, usage);
     try {
-      return { ok: true, analysis: interpretPhoto(raw, {}), usage, cost, ms: Date.now() - started };
+      return { ok: true, analysis: interpretPhoto(raw, context), usage, cost, ms: Date.now() - started };
     } catch (error) {
       return { ok: false, error: describeError(error), cost, ms: Date.now() - started };
     }
@@ -239,11 +275,11 @@ function summarise(runs: PhotoRun[], models: string[]) {
     );
     const spend = outcomes.reduce((sum, { outcome }) => sum + outcome.cost, 0);
     const paidCostPerPhoto = ok.length
-      ? ok.reduce((sum, { outcome }) => sum + costOf(MODELS[name], (outcome as Extract<Outcome, { ok: true }>).usage), 0) / ok.length
+      ? ok.reduce((sum, { outcome }) => sum + costOf(specOf(name), (outcome as Extract<Outcome, { ok: true }>).usage), 0) / ok.length
       : 0;
     return {
       name,
-      label: MODELS[name].label,
+      label: specOf(name).label,
       read: ok.length,
       total: outcomes.length,
       meanError: errors.length ? errors.reduce((sum, value) => sum + value, 0) / errors.length : null,
@@ -251,7 +287,8 @@ function summarise(runs: PhotoRun[], models: string[]) {
       avgMs: outcomes.reduce((sum, { outcome }) => sum + outcome.ms, 0) / Math.max(1, outcomes.length),
       spend,
       perPhoto: paidCostPerPhoto,
-      free: Boolean(MODELS[name].free),
+      free: Boolean(specOf(name).free),
+      measuredTime: name !== APP_COLUMN,
     };
   });
 }
@@ -281,9 +318,9 @@ function reportHtml(runs: PhotoRun[], models: string[], effort: Effort, stamp: s
       (row) => `<tr><th>${escapeHtml(row.label)}</th><td>${row.read}/${row.total}</td>
         <td>${row.meanError === null ? "–" : `${fmt(row.meanError)} g`}</td>
         <td>${row.within5 === null ? "–" : `${Math.round(row.within5 * 100)}%`}</td>
-        <td>${(row.avgMs / 1000).toFixed(1)} s</td>
+        <td>${row.measuredTime ? `${(row.avgMs / 1000).toFixed(1)} s` : "–"}</td>
         <td>${row.free ? "$0 (free tier)" : usd(row.spend)}</td>
-        <td>${row.read === 0 ? "–" : row.free ? `$0 · ${usd(row.perPhoto)} if paid` : usd(row.perPhoto)}</td>
+        <td>${row.read === 0 || !row.measuredTime ? (row.free ? "$0" : "–") : row.free ? `$0 · ${usd(row.perPhoto)} if paid` : usd(row.perPhoto)}</td>
         ${MONTHLY_VOLUMES.map((volume) => `<td>${row.free ? "$0" : row.read === 0 ? "–" : usd(row.perPhoto * volume)}</td>`).join("")}</tr>`,
     )
     .join("");
@@ -291,11 +328,13 @@ function reportHtml(runs: PhotoRun[], models: string[], effort: Effort, stamp: s
   const photoSections = runs
     .map(
       (run) => `<section class="photo">
-        <div class="meta"><img src=".prepared/${escapeHtml(basename(run.file, extname(run.file)))}.jpg" alt="">
-          <p class="name">${escapeHtml(run.file)}</p>
+        <div class="meta"><img src="${escapeHtml(relative(ROOT, run.imagePath))}" alt="">
+          <p class="name">${escapeHtml(run.label)}</p>
           <p>${run.note ? escapeHtml(run.note) : '<span class="muted">no note</span>'}</p>
-          ${run.protein !== undefined ? `<p class="truth">you said <b>${fmt(run.protein)} g</b> protein</p>` : ""}</div>
-        ${models.map((name) => `<div class="model"><h3>${escapeHtml(MODELS[name].label)}</h3>${outcomeHtml(run.outcomes[name])}</div>`).join("")}
+          ${run.hint ? `<p class="muted">hint: “${escapeHtml(run.hint)}”</p>` : ""}
+          ${run.outside ? '<p class="muted">outside food</p>' : ""}
+          ${run.protein !== undefined ? `<p class="truth">you logged <b>${fmt(run.protein)} g</b> protein</p>` : ""}</div>
+        ${models.map((name) => `<div class="model"><h3>${escapeHtml(specOf(name).label)}</h3>${outcomeHtml(run.outcomes[name])}</div>`).join("")}
       </section>`,
     )
     .join("");
@@ -316,25 +355,45 @@ tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
 li.unsure span:first-child{color:var(--warn)}.total{margin:8px 0 0;font-size:.85rem}.error{color:var(--danger);font-size:.85rem}
 </style></head><body><main>
 <h1>Meal photo model comparison</h1>
-<p class="muted">${stamp} · ${runs.length} photos · Claude effort “${effort}” · same instructions the app sends, no hints · amber items are ones the model marked unsure</p>
+<p class="muted">${stamp} · ${runs.length} photos · Claude effort “${effort}” · same instructions the app sends, with each photo's original hint · amber items are ones the model marked unsure</p>
 <h2>Summary</h2>
 <div class="table-wrap"><table><thead><tr><th>Model</th><th>Read</th><th>Avg protein error</th><th>Within 5 g</th><th>Avg time</th><th>This run</th><th>Per photo</th>${MONTHLY_VOLUMES.map((volume) => `<th>${volume} photos/mo</th>`).join("")}</tr></thead>
 <tbody>${summaryRows}</tbody></table></div>
-<p class="muted">Protein error is only scored for photos where notes.txt gives a protein figure. Costs come from each response's real token counts at list prices; Gemini's "if paid" uses Flash list prices.</p>
+<p class="muted">Protein error is measured against what you logged (or the protein in notes.txt), only where that's known. Costs come from each response's real token counts at list prices; Gemini's "if paid" uses Flash list prices.</p>
 <h2>Photos</h2>${photoSections}
 </main></body></html>`;
 }
 
 /* Main */
 
-async function main() {
-  loadEnvFile(".env.local");
-  const { models, effort, limit, yes } = parseArgs(process.argv.slice(2));
+const itemSummary = (items: { quantity: number; unit: string; name: string }[] | undefined) =>
+  items?.map((item) => `${fmt(item.quantity)} ${item.unit} ${item.name}`).join(", ");
 
+function jobsFromExport(path: string, limit: number): Job[] {
+  const data = JSON.parse(readFileSync(path, "utf8")) as ComparisonExport;
+  if (data.format !== "mycalorie-comparison") throw new Error(`${path} isn't a Mycalorie comparison export`);
+  mkdirSync(PREPARED, { recursive: true });
+  return data.samples.slice(0, limit).map((sample) => {
+    const imagePath = join(PREPARED, `${sample.id}.jpg`);
+    writeFileSync(imagePath, Buffer.from(sample.photoBase64, "base64"));
+    const when = new Date(sample.takenAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+    return {
+      key: sample.id,
+      label: `${when} · ${sample.logged.name}`,
+      imagePath,
+      note: itemSummary(sample.logged.items) ?? sample.logged.name,
+      protein: sample.logged.macros.protein,
+      context: { hint: sample.hint || undefined, outside: sample.outside },
+      appEstimate: sample.estimate,
+    };
+  });
+}
+
+function jobsFromFolder(limit: number): Job[] | null {
   if (!existsSync(PHOTOS)) {
     mkdirSync(PHOTOS, { recursive: true });
-    console.log(`Created ${PHOTOS}/. Put your meal photos there (and notes in ${NOTES}), then run this again.`);
-    return;
+    console.log(`Created ${PHOTOS}/. Put your meal photos there (and notes in ${NOTES}), or use --from with an export from the app.`);
+    return null;
   }
   const files = readdirSync(PHOTOS)
     .filter((file) => PHOTO_TYPES.has(extname(file).toLowerCase()))
@@ -342,8 +401,27 @@ async function main() {
     .slice(0, limit);
   if (files.length === 0) {
     console.log(`No photos in ${PHOTOS}/ yet.`);
-    return;
+    return null;
   }
+  mkdirSync(PREPARED, { recursive: true });
+  const notes = readNotes();
+  return files.map((file) => {
+    const key = basename(file, extname(file)).toLowerCase();
+    return { key, label: file, imagePath: preparePhoto(file), context: {}, ...notes.get(key) };
+  });
+}
+
+function appOutcome(estimate: Analysis | null): Outcome {
+  if (!estimate) return { ok: false, error: "Gemini couldn't read it in the app; you typed it in", cost: 0, ms: 0 };
+  return { ok: true, analysis: estimate, usage: { inputTokens: 0, outputTokens: 0 }, cost: 0, ms: 0 };
+}
+
+async function main() {
+  loadEnvFile(".env.local");
+  const { models, effort, limit, from, yes } = parseArgs(process.argv.slice(2));
+
+  const jobs = from ? jobsFromExport(from, limit) : jobsFromFolder(limit);
+  if (!jobs || jobs.length === 0) return;
 
   const missing = [
     models.some((name) => MODELS[name].provider === "gemini") && !process.env.GEMINI_API_KEY && "GEMINI_API_KEY",
@@ -361,10 +439,10 @@ async function main() {
   const paid = models.filter((name) => !MODELS[name].free);
   const estimate = paid.reduce(
     (sum, name) =>
-      sum + files.length * costOf(MODELS[name], { inputTokens: TYPICAL_INPUT_TOKENS, outputTokens: MODELS[name].typicalOutput }),
+      sum + jobs.length * costOf(MODELS[name], { inputTokens: TYPICAL_INPUT_TOKENS, outputTokens: MODELS[name].typicalOutput }),
     0,
   );
-  console.log(`${files.length} photos × ${models.map((name) => MODELS[name].label).join(", ")}`);
+  console.log(`${jobs.length} photos × ${models.map((name) => MODELS[name].label).join(", ")}`);
   if (paid.length) {
     console.log(`Estimated Claude spend: about ${usd(estimate)} (effort "${effort}"). Gemini free tier: $0.`);
     if (!yes) {
@@ -375,31 +453,35 @@ async function main() {
     }
   }
 
-  mkdirSync(PREPARED, { recursive: true });
-  const notes = readNotes();
   const client = paid.length ? new Anthropic() : null;
+  const hasApp = jobs.some((job) => job.appEstimate !== undefined);
+  const columns = hasApp ? [APP_COLUMN, ...models] : models;
   const runs: PhotoRun[] = [];
 
-  for (const [index, file] of files.entries()) {
-    const key = basename(file, extname(file)).toLowerCase();
-    const image = readFileSync(preparePhoto(file)).toString("base64");
-    const entries = await Promise.all(models.map(async (name) => [name, await runModel(name, image, client, effort)] as const));
-    const run: PhotoRun = { key, file, ...notes.get(key), outcomes: Object.fromEntries(entries) };
-    runs.push(run);
+  for (const [index, job] of jobs.entries()) {
+    const image = readFileSync(job.imagePath).toString("base64");
+    const entries = await Promise.all(
+      models.map(async (name) => [name, await runModel(name, image, job.context, client, effort)] as const),
+    );
+    const outcomes: Record<string, Outcome> = Object.fromEntries(entries);
+    if (job.appEstimate !== undefined) outcomes[APP_COLUMN] = appOutcome(job.appEstimate);
+    const { context, ...rest } = job;
+    runs.push({ ...rest, hint: context.hint, outside: context.outside, outcomes });
+
     const line = entries
       .map(([name, outcome]) => `${name} ${outcome.ok ? `${fmt(proteinOf(outcome.analysis))} g` : "failed"}`)
       .join(" · ");
-    console.log(`[${index + 1}/${files.length}] ${file}: ${line}${run.protein !== undefined ? ` (you: ${run.protein} g)` : ""}`);
+    console.log(`[${index + 1}/${jobs.length}] ${job.label}: ${line}${job.protein !== undefined ? ` (logged: ${job.protein} g)` : ""}`);
   }
 
   const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
   const fileStamp = stamp.replace(/[ :]/g, "-");
-  writeFileSync(join(ROOT, `results-${fileStamp}.json`), JSON.stringify({ stamp, effort, models, runs }, null, 2));
+  writeFileSync(join(ROOT, `results-${fileStamp}.json`), JSON.stringify({ stamp, effort, models: columns, runs }, null, 2));
   const reportPath = join(ROOT, `report-${fileStamp}.html`);
-  writeFileSync(reportPath, reportHtml(runs, models, effort, stamp));
+  writeFileSync(reportPath, reportHtml(runs, columns, effort, stamp));
 
   console.log("\nSummary");
-  for (const row of summarise(runs, models)) {
+  for (const row of summarise(runs, columns)) {
     const accuracy = row.meanError === null ? "nothing scored" : `avg error ${fmt(row.meanError)} g`;
     const cost = row.free
       ? "free"

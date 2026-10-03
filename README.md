@@ -22,7 +22,17 @@ For working on the review screens without a key, run `MOCK_GEMINI=1 npm run dev`
 
 ## Comparing AI models on your own meals
 
-`npm run compare` sends the same photos to Gemini Flash and to Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5, using the exact instructions the app sends. It then writes a side-by-side report, with each model's items, protein and real cost per photo, to `compare/report-*.html`.
+The easiest way: in the app, switch on **Keep meal photos for comparison** (bottom of the home screen). Every photo you log is then kept with Gemini's first estimate and what you logged after fixing it. After a few weeks, tap **Export** and AirDrop the file to your Mac, then run:
+
+```
+npm run compare -- --from ~/Downloads/mycalorie-comparison-<date>.json
+```
+
+Each photo is re-sent with the hint and Outside-food setting you used, and every model is scored against what you actually logged. The report also shows how far off the app's original Gemini answer was.
+
+Alternatively, `npm run compare` sends the same photos to Gemini Flash and to Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5, using the exact instructions the app sends. It then writes a side-by-side report, with each model's items, protein and real cost per photo, to `compare/report-*.html`.
+
+Without an export:
 
 1. Put photos in `compare/photos/`. JPEG, PNG and iPhone HEIC all work, and they're resized the same way the app resizes them.
 2. Optionally note what you actually ate in `compare/notes.txt`, one line per photo, keyed by file name without its extension. A protein figure after `|` lets the report score each model:
@@ -32,7 +42,7 @@ For working on the review screens without a key, run `MOCK_GEMINI=1 npm run dev`
    ```
 3. Add `GEMINI_API_KEY` and `ANTHROPIC_API_KEY` to `.env.local`, then run `npm run compare`. Before spending anything it shows the estimated Claude cost and asks you to confirm.
 
-Options: `--models gemini,sonnet` runs a subset, `--limit 10` caps the number of photos, `--effort low|medium|high` sets Claude's effort (default `low`, which keeps cost down), and `--yes` skips the confirmation. The `compare/` folder is git-ignored, so your photos stay on your machine.
+Options: `--from <export.json>` uses photos kept by the app, `--models gemini,sonnet` runs a subset, `--limit 10` caps the number of photos, `--effort low|medium|high` sets Claude's effort (default `low`, which keeps cost down), and `--yes` skips the confirmation. The `compare/` folder is git-ignored, so your photos stay on your machine.
 
 ## Access code
 

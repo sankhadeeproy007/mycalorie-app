@@ -17,14 +17,14 @@ const DEMO_KEY = "mycalorie:demo:v4";
 const EMPTY_STATE: AppState = { settings: { targets: NO_TARGETS }, saved: [], logs: [] };
 
 /** Older saves stored only a protein target; carry it into the full set of targets. */
-type LegacySettings = { proteinTarget?: number | null; targets?: Targets };
+type LegacySettings = { proteinTarget?: number | null; targets?: Targets; keepForComparison?: boolean };
 
 function migrate(saved: Omit<AppState, "settings"> & { settings?: LegacySettings }): AppState {
   const { proteinTarget = null, targets } = saved.settings ?? {};
   return {
     ...EMPTY_STATE,
     ...saved,
-    settings: { targets: targets ?? { ...NO_TARGETS, protein: proteinTarget } },
+    settings: { ...saved.settings, targets: targets ?? { ...NO_TARGETS, protein: proteinTarget } },
   };
 }
 
@@ -150,4 +150,8 @@ export function removeSavedMeal(id: string) {
 
 export function setTargets(targets: Targets) {
   commit((prev) => ({ ...prev, settings: { ...prev.settings, targets } }));
+}
+
+export function setKeepForComparison(keep: boolean) {
+  commit((prev) => ({ ...prev, settings: { ...prev.settings, keepForComparison: keep } }));
 }

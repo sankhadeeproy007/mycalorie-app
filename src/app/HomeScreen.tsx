@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { Dock } from "@/components/Dock";
-import { MealSheet, type LogEntry, type SheetRequest } from "@/components/meal/MealSheet";
+import { MealSheet, type LogEntry, type PhotoCapture, type SheetRequest } from "@/components/meal/MealSheet";
+import { addSample, removeSampleForLog } from "@/lib/comparison-store";
 import { EatenToday } from "@/components/EatenToday";
 import { ScorePanel, StreakPanel } from "@/components/ProgressPanels";
 import { ProteinPanel } from "@/components/ProteinPanel";
@@ -29,6 +31,7 @@ import {
   restoreLog,
   saveLogToShelf,
   saveMeal,
+  setKeepForComparison,
   setTargets,
   useAppState,
 } from "@/lib/store";
@@ -66,6 +69,8 @@ export function HomeScreen() {
   const state = useAppState();
   const today = useToday();
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
+  const [comparisonRevision, setComparisonRevision] = useState(0);
+  const refreshComparison = () => setComparisonRevision((value) => value + 1);
   const [notice, setNotice] = useState<UndoNotice | null>(null);
   const [editingTargets, setEditingTargets] = useState(false);
 
@@ -91,7 +96,34 @@ export function HomeScreen() {
   }, [state, today]);
 
   const announceLog = (log: MealLog) =>
-    setNotice({ key: log.id, message: `logged ${log.name} +${log.macros.protein} g`, undo: () => removeLog(log.id) });
+    setNotice({
+      key: log.id,
+      message: `logged ${log.name} +${log.macros.protein} g`,
+      undo: () => {
+        removeLog(log.id);
+        void removeSampleForLog(log.id).then(refreshComparison);
+      },
+    });
+
+  /** Keeps the photo, Gemini's first answer and what was finally logged, for comparing models later. */
+  const keepSample = async (capture: PhotoCapture, log: MealLog) => {
+    try {
+      const photo = await (await fetch(capture.image.dataUrl)).blob();
+      await addSample({
+        id: crypto.randomUUID(),
+        logId: log.id,
+        takenAt: log.eatenAt,
+        photo,
+        hint: capture.hint,
+        outside: capture.outside,
+        estimate: capture.estimate,
+        logged: { name: log.name, macros: log.macros, items: log.items },
+      });
+      refreshComparison();
+    } catch (error) {
+      console.warn("Couldn't keep this photo for comparison", error);
+    }
+  };
 
   const logRegular = (meal: SavedMeal, portion: number) =>
     announceLog(
@@ -106,7 +138,7 @@ export function HomeScreen() {
     }
   };
 
-  const logEntry = async ({ name, macros, items, savedMealId, photoFile, saveAs }: LogEntry) => {
+  const logEntry = async ({ name, macros, items, savedMealId, photoFile, saveAs, capture }: LogEntry) => {
     setSheet(null);
     let regularId = savedMealId;
     if (saveAs) {
@@ -114,7 +146,9 @@ export function HomeScreen() {
       regularId = saveMeal({ ...saveAs, photo }).id;
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
-    announceLog(logMeal({ name, macros, items, savedMealId: regularId }));
+    const log = logMeal({ name, macros, items, savedMealId: regularId });
+    announceLog(log);
+    if (capture && state?.settings.keepForComparison) void keepSample(capture, log);
   };
 
   const removeFromToday = (log: MealLog) => {
@@ -150,6 +184,11 @@ export function HomeScreen() {
             </div>
             <Regulars meals={view.regulars} onLog={logRegular} onAdjust={(regular) => setSheet({ kind: "adjust", regular })} />
             <EatenToday logs={view.todaysLogs} onRemove={removeFromToday} onSaveToRegulars={addToRegulars} />
+            <ComparisonPanel
+              enabled={Boolean(state?.settings.keepForComparison)}
+              onToggle={setKeepForComparison}
+              revision={comparisonRevision}
+            />
           </>
         ) : (
           <div className={styles.loading} aria-hidden="true">

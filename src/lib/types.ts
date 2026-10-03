@@ -71,6 +71,8 @@ export type Targets = { [K in keyof Macros]: number | null };
 
 export type Settings = {
   targets: Targets;
+  /** Keep each analysed photo with its estimate and the logged result, for comparing AI models. */
+  keepForComparison?: boolean;
 };
 
 export type AppState = {
