@@ -1,0 +1,152 @@
+# Mycalorie: project status and handoff
+
+Last updated: 2026-10-04. Start here when picking the project back up. PRODUCT.md holds the product decisions and DESIGN.md the visual system; this file covers what's built, how it fits together, what's pending, and how to work on it.
+
+## What it is
+
+A personal, single-user meal tracker for Indian food, used as an installed web app on the owner's iPhone. You photograph a meal, or describe it or type it in. Gemini estimates the items in Indian household measures, you correct them, and the meal counts toward daily targets for protein, calories, carbs and fat. Protein is the main number. On top of that sits adult gamification: a day score, a protein streak with a 12-week graph, and milestones. Repeat meals (regulars) log in one tap.
+
+- **Live:** deployed on Vercel behind an access code. The address is kept out of the repo.
+- **Repo:** https://github.com/sankhadeeproy007/mycalorie-app (private). Pushing to `main` deploys on Vercel automatically.
+- **Hard constraints:**
+  - Zero running cost: Gemini free tier, Vercel Hobby. The owner's budget is at most $2–3/month if it ever moves to a paid model.
+  - Single user, no accounts.
+  - Mature look: the owner rejected a cartoonish design.
+
+## Owner context and preferences
+
+- Lives in India and eats mostly Indian food. Dishes, portions (katori, roti count, ladle) and nutrition use Indian conventions (IFCT 2017), with en-IN number grouping.
+- **Daily targets:** all four (protein, calories, carbs, fat) are set in the app and add up at 4/4/9. The numbers are kept out of the repo.
+- **Look:** the "Console" design was picked from 5 mockups, after the earlier hand-drawn "Prep Shelf" look was rejected as childish. No mascots, confetti or guilt cues.
+- **Mockups first:** show options before big visual changes.
+- **Gamification:** streaks, day score and milestones are wanted. Levels/XP were not chosen.
+
+## Stack
+
+- Next.js 16.3 (App Router, TypeScript, CSS modules), React 19. Next 16 renames middleware to **`src/proxy.ts`**. Read `node_modules/next/dist/docs/` before using unfamiliar Next APIs (see AGENTS.md).
+- Fonts: Geist and Geist Mono via `next/font`. Icons: `lucide-react`.
+- AI: **Gemini** (`gemini-flash-latest` by default; override with `GEMINI_MODEL`) through REST with a JSON response schema.
+- Data: **browser storage only** for now. App state lives in `localStorage`; comparison photos live in IndexedDB.
+- Dev tools: `tsx` and `@anthropic-ai/sdk`, both used only by the comparison script.
+
+## Environment variables
+
+On Vercel (Project → Settings → Environment Variables; **redeploy after changing any of them**), and in `.env.local` for local work:
+
+| Variable | Purpose |
+|---|---|
+| `GEMINI_API_KEY` | Google AI Studio key, free tier. Never enable billing, or the free allowance ends. |
+| `GEMINI_MODEL` | Optional model override. |
+| `ACCESS_CODE` | 4–8 digits for the unlock screen. Changing it signs every device out. |
+| `SESSION_SECRET` | Random string that signs the session cookie (`openssl rand -hex 32`). |
+| `ANTHROPIC_API_KEY` | Local `.env.local` only, for `npm run compare`. Not used by the app. |
+| `MOCK_GEMINI=1` | Development only: canned AI answers so the screens work without a key. |
+
+## What's built
+
+**Home screen** (`src/app/HomeScreen.tsx`), in the Console design: graphite panels, hairline seams, mono figures.
+- **Launch screen:** the 4×4 logo lights up in a wave, then fades. It's in the server HTML, so it shows instead of a blank screen.
+- **Status line:** the date on the left; on the right, a drawn status dot with "18d streak · today open" or "… · hit". Tapping the date 5 times within 2.5 s reveals the developer panel.
+- **Protein panel:** "N g to go" (or "+N g past target"), a bar, and kcal/carbs/fat rows showing what's left and the target. The sliders icon opens the targets sheet.
+- **Day score panel:** "N so far", 7 past days plus today (outlined) on one 0–100 scale, and the 7-day average as a dashed line.
+- **Streak panel:**
+  - A 12-week contribution graph in a protein-blue ramp, with a legend (none / under / hit).
+  - Tapping anywhere on it opens the nearest day in the **day sheet**: read-only totals against targets, the score, and meals with their items, with ‹ › to step between days.
+- **Regulars:** photo tiles. A tap logs 1×. The "1×" tab opens the portion picker (½, 1, 1½, 2) plus "adjust before logging".
+- **Today:** the meal list, with save-to-regulars and remove (with undo).
+- **Model comparison panel:** the "Keep meal photos for comparison" switch, a count, Export and Clear.
+- **Developer panel (hidden):** a "Demo data" switch, "Reset demo data", and "hide".
+- **Dock:** "Log a meal" (photo) and "Type" (describe it, or enter numbers).
+
+**Meal sheet** (`src/components/meal/`). It moves through stages: compose → reading → review, or label.
+- **Compose:**
+  - Photo, optional hint, and the **Outside food** switch (restaurant oil and portions).
+  - With **Type**, a description field instead, plus "Enter numbers instead".
+- **Review:**
+  - **Items:** each item has a − value unit + stepper: ½ steps, ½ tsp for oil and ghee, 25 g by weight, and a g/ml toggle where the weight is known. Items the AI is unsure of are marked **check** and shown first. Items can be removed.
+  - **+ add:** pick from regulars and products, or describe something to add (text estimate).
+  - **Matched regular:** a "Log that instead" banner.
+  - **Totals:** shown live, and editable directly.
+  - **Save to regulars:** keeps all the items and a small photo.
+- **Label:** a nutrition-label photo is read exactly: product name, values per serving and per 100 g, a servings stepper. It's saved as a **product**, which is a regular with `product` info, usable as an ingredient.
+- **Adjust before logging:** opens a regular's items for a one-off change.
+
+**Targets sheet:** protein (required), calories, carbs and fat. When P/C/F are all filled it suggests the calorie total (4/4/9) with "Use N kcal".
+
+**AI** (`src/lib/meal-prompt.ts` holds the shared instructions, schema and clean-up; `src/lib/providers/gemini.ts` makes the call):
+- **Photo:** returns `meal`, `label` or `not_food`.
+- **Item rules:**
+  - Indian dish names and household units.
+  - Grams per item, with a liquid flag.
+  - Oil/ghee as its own tsp item.
+  - `uncertain` for hidden quantities.
+- **Bones:** for bone-in meat and fish, only the edible meat counts (leg/thigh ~30% bone, drumstick ~35%, mutton piece ~30%, fish ~40%), and the cut is named.
+- **Regulars:** the owner's regulars are sent along so a photo can match one.
+- **Text estimates:** a separate endpoint takes a description.
+- **Routes:** `/api/analyze` and `/api/estimate`. Errors map to `not_configured`, `quota`, `unreadable`, `upstream`, and the UI falls back to manual entry.
+
+**Access lock:**
+- **Proxy:** `src/proxy.ts` gates everything except `/unlock`, `/api/unlock` and the icons/manifest.
+- **Unlock route:** `/api/unlock` checks `ACCESS_CODE` timing-safely, sets an HMAC session cookie for 180 days, adds a 700 ms delay on wrong codes, and locks out after 5 failures for 15 min (in memory, so best-effort on serverless).
+- **Defaults:** with no code set the app is open in development and closed in production.
+
+**Phone polish:**
+- Fields are ≥16px, so iOS doesn't zoom on focus.
+- `ViewportSync` publishes `--keyboard-inset` and `--visual-height`, so sheets sit above the keyboard. Return keys go next/done/go, ignoring keyboards that are still composing.
+- When installed, the top keeps at least 54px clear of the status bar (`--top-inset`).
+- PWA manifest and generated icons (`icon.tsx`, `apple-icon.tsx`).
+
+**Model comparison:**
+- **In the app:** with the switch on, each logged photo is kept with its hint, the Outside setting, Gemini's first answer and what was finally logged. Export shares one JSON file. Demo meals are never kept, and undoing a log drops its photo.
+- **On the Mac:** `npm run compare -- --from <export.json>` re-sends each photo to Gemini Flash and Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5 (effort `low` by default). It scores each model against what was logged, adds a column for the app's original Gemini answer, measures real cost per photo, and writes `compare/report-*.html`. It asks before spending. `compare/` is git-ignored.
+
+## Data model (`src/lib/types.ts`)
+
+- `AppState = { settings: { targets, keepForComparison? }, saved: SavedMeal[], logs: MealLog[] }`, stored in localStorage under `mycalorie:v1`. Demo data uses `mycalorie:demo:v4`, the demo switch `mycalorie:demo-mode`, and the developer flag `mycalorie:developer`.
+- `MealItem`: `quantity`, `unit`, `baseQuantity`, `baseMacros`, plus optional `gramsPerUnit`, `weightUnit`, `uncertain`, `cookingFat` and `sourceId`. An item's macros scale linearly from its base (`src/lib/items.ts`).
+- `SavedMeal` (a regular): `macros` for 1×, plus optional `items` and `product`.
+- `MealLog`: `macros` as eaten, `portion`, `day` (the local date), and optional `items` and `savedMealId`.
+- Older saved data is migrated in `store.ts`; for example, `proteinTarget` becomes `targets`.
+
+## Working on it
+
+```bash
+npm install
+npm run dev                      # http://localhost:3000 (add ?demo for sample data)
+MOCK_GEMINI=1 npm run dev        # canned AI answers; hint "label" returns a sample label
+npx tsc --noEmit && npm run lint && npm run build   # all three should pass before pushing
+npm run compare -- --from <export.json>             # model comparison (needs keys)
+```
+
+- **Checking UI changes:** take Puppeteer screenshots at 390×844 @2x with `puppeteer-core` and the local Chrome. The scripts lived in the session scratchpad; recreate them as needed. Puppeteer can't emulate iOS standalone mode or the real keyboard, so a fake `visualViewport` was used to simulate the keyboard.
+- **Design workflow:** the Impeccable skill (`.impeccable/`).
+  - The direction contract is in `.impeccable/surfaces/src-app-page-tsx.md`.
+  - The design detector should report no non-advisory findings.
+- **Commits:** end each message with the Claude co-author line. Push to `main` to deploy, then confirm with `gh api repos/sankhadeeproy007/mycalorie-app/deployments`.
+
+## Not yet verified on real Gemini
+
+The production key exists only on Vercel, so these have only been tested with the mock:
+- the newer response schema (nullable fields, enum, label kind);
+- the bone-in rules (a tandoori leg piece);
+- text estimates;
+- regular matching.
+
+The owner confirmed a banana photo works. If a real call fails on the schema, the place to look is the `toGeminiSchema` conversion in `meal-prompt.ts`.
+
+## Next steps
+
+1. **Collect photos (in progress):** the owner is logging meals with "Keep meal photos for comparison" switched on. At about 30–40 photos: add $5 of Claude API credit (it expires a year after purchase), export from the app, run `npm run compare -- --from …`, and pick a model. Sonnet 5.5 fits the $2–3 budget; Opus may not.
+2. **If Claude wins:** add a provider setting and a `src/lib/providers/claude.ts` (the comparison script already has a working Claude call to reuse), then switch `analyze-meal.ts` to it. If the user asks for refusal fallbacks, add them deliberately.
+3. **Offered, not built:** a targets calculator (protein + calories + fat %, with carbs filled in). The owner entered all four targets by hand instead.
+4. **Later:**
+   - Supabase sync, so data survives a deleted app and works across devices (only `store.ts` should need to change).
+   - Storing targets per day, so past days are scored against the targets in force then.
+   - A screen to rename, edit and delete regulars and products.
+   - History and settings screens.
+   - Learning from corrections.
+   - iOS splash images, to cover the brief dark moment before the HTML loads.
+5. **Known limitations:**
+   - The lockout counter lives in server memory.
+   - iOS may clear a home-screen app's storage after weeks without use, so export comparison photos as a backup now and then.
+   - The day sheet is read-only.
