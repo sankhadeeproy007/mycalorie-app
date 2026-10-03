@@ -46,9 +46,25 @@
 }
 
 .demo {
+  position: relative;
   padding: 2px 8px;
   border: 1px dashed var(--seam-strong);
   border-radius: 6px;
+  color: var(--muted);
+  font: inherit;
+  background: none;
+}
+
+/* A 44px touch target around the small chip. */
+.demo::before {
+  content: "";
+  position: absolute;
+  inset: -10px -4px;
+}
+
+.demo:hover {
+  border-color: var(--muted);
+  color: var(--text);
 }
 
 .split {

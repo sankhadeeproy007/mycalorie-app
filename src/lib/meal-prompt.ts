@@ -22,7 +22,8 @@ For every item give:
 - grams: the item's total weight (ml for drinks), and isLiquid for drinks.
 - protein, kcal, carbs and fat for the whole item at that quantity, based on the Indian Food Composition Tables (IFCT 2017, NIN) where you can.
 - uncertain: true when the quantity can't be seen clearly (eggs folded into an omelette, rotis stacked out of sight, pieces under gravy, sugar in tea).
-For cooked dishes, list the cooking oil, ghee or butter as its own item named "Oil / ghee" with unit "tsp" and cookingFat true, and leave that fat out of the dish's own numbers. Use moderate home-cooking amounts unless the food was eaten out.`;
+For cooked dishes, list the cooking oil, ghee or butter as its own item named "Oil / ghee" with unit "tsp" and cookingFat true, and leave that fat out of the dish's own numbers. Use moderate home-cooking amounts unless the food was eaten out.
+Bone-in meat and fish (tandoori chicken, chicken or mutton curry, fish fry, biryani pieces): count pieces and name the cut ("Tandoori chicken leg piece", "drumstick", "breast piece", "mutton curry piece"). Base grams and every macro on the edible meat only, never the bone: roughly a chicken leg piece or thigh is about 30% bone, a drumstick about 35%, a bone-in mutton or goat curry piece about 30%, and a whole or steak-cut fish about 40%. Boneless items (chicken tikka, boneless curry, fillets, kebabs) have no bone. If you can't tell whether pieces are bone-in, assume the dish's usual style and set uncertain to true.`;
 
 export const PHOTO_PROMPT = `You read a photo for a personal nutrition tracker. The owner lives in India and mostly eats Indian food: home-cooked North and South Indian meals, thalis, tiffin, street food and restaurant dishes.
 

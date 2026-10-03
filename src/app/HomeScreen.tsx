@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { DaySheet } from "@/components/DaySheet";
+import { DeveloperPanel } from "@/components/DeveloperPanel";
+import { LaunchScreen } from "@/components/LaunchScreen";
 import { Dock } from "@/components/Dock";
 import { MealSheet, type LogEntry, type PhotoCapture, type SheetRequest } from "@/components/meal/MealSheet";
 import { addSample, removeSampleForLog } from "@/lib/comparison-store";
@@ -31,7 +33,9 @@ import {
   removeSavedMeal,
   restoreLog,
   saveLogToShelf,
+  resetDemoData,
   saveMeal,
+  setDemoMode,
   setKeepForComparison,
   setTargets,
   useAppState,
@@ -150,7 +154,8 @@ export function HomeScreen() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     const log = logMeal({ name, macros, items, savedMealId: regularId });
     announceLog(log);
-    if (capture && state?.settings.keepForComparison) void keepSample(capture, log);
+    // Demo meals are not real meals, so they never join the comparison set.
+    if (capture && state?.settings.keepForComparison && !isDemo()) void keepSample(capture, log);
   };
 
   const removeFromToday = (log: MealLog) => {
@@ -167,11 +172,16 @@ export function HomeScreen() {
 
   return (
     <>
+      <LaunchScreen ready={view !== null} />
       <main className={styles.page} aria-busy={view === null}>
         <header className={`mono ${styles.status}`}>
           <span className={styles.statusLeft}>
             {view && formatStatusDate(today)}
-            {view && isDemo() && <span className={styles.demo}>demo data</span>}
+            {view && isDemo() && (
+              <button type="button" className={styles.demo} onClick={() => setDemoMode(false)}>
+                demo data · exit
+              </button>
+            )}
           </span>
           {view && <StreakStatus current={view.streaks.current} hitToday={view.streaks.hitToday} hasTarget={remaining !== null} />}
         </header>
@@ -197,6 +207,7 @@ export function HomeScreen() {
               onToggle={setKeepForComparison}
               revision={comparisonRevision}
             />
+            <DeveloperPanel demo={isDemo()} onDemoChange={setDemoMode} onResetDemo={resetDemoData} />
           </>
         ) : (
           <div className={styles.loading} aria-hidden="true">

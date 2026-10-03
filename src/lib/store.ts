@@ -13,6 +13,8 @@ import { NO_TARGETS, type AppState, type Macros, type MealItem, type MealLog, ty
 
 const STORAGE_KEY = "mycalorie:v1";
 const DEMO_KEY = "mycalorie:demo:v4";
+/** Set when demo mode is switched on in the app; `?demo` in the URL also turns it on. */
+const DEMO_MODE_KEY = "mycalorie:demo-mode";
 
 const EMPTY_STATE: AppState = { settings: { targets: NO_TARGETS }, saved: [], logs: [] };
 
@@ -32,7 +34,13 @@ let state: AppState | null = null;
 const listeners = new Set<() => void>();
 
 export function isDemo(): boolean {
-  return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("demo");
+  if (typeof window === "undefined") return false;
+  if (new URLSearchParams(window.location.search).has("demo")) return true;
+  try {
+    return window.localStorage.getItem(DEMO_MODE_KEY) === "on";
+  } catch {
+    return false;
+  }
 }
 
 function storageKey(): string {
@@ -146,6 +154,37 @@ export function removeSavedMeal(id: string) {
     saved: prev.saved.filter((meal) => meal.id !== id),
     logs: prev.logs.map((log) => (log.savedMealId === id ? { ...log, savedMealId: undefined } : log)),
   }));
+}
+
+function reload() {
+  state = load();
+  listeners.forEach((listener) => listener());
+}
+
+/** Swaps between real and demo data in place; each keeps its own storage, so nothing is lost either way. */
+export function setDemoMode(on: boolean) {
+  try {
+    if (on) window.localStorage.setItem(DEMO_MODE_KEY, "on");
+    else window.localStorage.removeItem(DEMO_MODE_KEY);
+  } catch {
+    // Without storage the switch can't stick; the URL parameter still works.
+  }
+  const url = new URL(window.location.href);
+  if (!on && url.searchParams.has("demo")) {
+    url.searchParams.delete("demo");
+    window.history.replaceState(null, "", url);
+  }
+  reload();
+}
+
+/** Throws away whatever was done in demo mode and starts again from fresh sample data. */
+export function resetDemoData() {
+  try {
+    window.localStorage.removeItem(DEMO_KEY);
+  } catch {
+    // Nothing stored to remove.
+  }
+  reload();
 }
 
 export function setTargets(targets: Targets) {

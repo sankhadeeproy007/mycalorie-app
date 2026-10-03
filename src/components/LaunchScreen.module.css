@@ -1,0 +1,60 @@
+.screen {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--ground);
+  transition: opacity 320ms var(--ease-out);
+}
+
+.screen[data-leaving] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mark {
+  display: grid;
+  grid-template-columns: repeat(4, 18px);
+  gap: 5px;
+  transition: scale 320ms var(--ease-out);
+}
+
+.screen[data-leaving] .mark {
+  scale: 1.08;
+}
+
+/* Each cell lights to its level in a diagonal wave, then keeps pulsing until the app is ready. */
+.cell {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--graph-0);
+  animation: light 900ms var(--delay) var(--ease-out) infinite alternate both;
+}
+
+@keyframes light {
+  from {
+    background: var(--graph-0);
+  }
+  to {
+    background: var(--lit);
+  }
+}
+
+.name {
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+}
+
+/* No wave: the mark appears lit and the screen simply fades. */
+@media (prefers-reduced-motion: reduce) {
+  .cell {
+    animation: none;
+    background: var(--lit);
+  }
+}
