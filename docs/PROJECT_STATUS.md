@@ -46,7 +46,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 
 **Home screen** (`src/app/HomeScreen.tsx`), in the Console design: graphite panels, hairline seams, mono figures.
 - **Launch screen:** the 4×4 logo lights up in a wave, then fades. It's in the server HTML, so it shows instead of a blank screen.
-- **Status line:** the date on the left; on the right, a drawn status dot with "18d streak · today open" or "… · hit". Tapping the date 5 times within 2.5 s reveals the developer panel.
+- **Status line:** the date on the left; on the right, a drawn status dot (a ring while today is open) with "18d streak", or "18d streak · hit". Tapping the date 5 times within 2.5 s reveals the developer panel.
 - **Protein panel:** "N g to go" (or "+N g past target"), a bar, and kcal/carbs/fat rows showing what's left and the target. The sliders icon opens the targets sheet.
 - **Day score panel:** "N so far", 7 past days plus today (outlined) on one 0–100 scale, and the 7-day average as a dashed line.
 - **Streak panel:**
@@ -93,7 +93,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 **Phone polish:**
 - Fields are ≥16px, so iOS doesn't zoom on focus.
 - `ViewportSync` publishes `--keyboard-inset` and `--visual-height`, so sheets sit above the keyboard. Return keys go next/done/go, ignoring keyboards that are still composing.
-- When installed, the top keeps at least 54px clear of the status bar (`--top-inset`).
+- When installed, the top keeps at least 54px clear of the status bar (`--top-inset`). Installed mode is detected two ways: the `display-mode: standalone` media query, and `data-standalone`, which ViewportSync sets from `navigator.standalone`. A solid strip (`body::before`) sits behind the status bar so scrolled content slides under it.
 - While any sheet is open the page behind it is frozen (`src/lib/scroll-lock.ts` pins the body), because iOS otherwise scrolls the page under a modal dialog. Closing restores the exact scroll position.
 - PWA manifest and generated icons (`icon.tsx`, `apple-icon.tsx`).
 
@@ -103,7 +103,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 
 ## Data model (`src/lib/types.ts`)
 
-- `AppState = { settings: { targets, keepForComparison? }, saved: SavedMeal[], logs: MealLog[] }`, stored in localStorage under `mycalorie:v1`. Demo data uses `mycalorie:demo:v4`, the demo switch `mycalorie:demo-mode`, and the developer flag `mycalorie:developer`.
+- `AppState = { settings: { targets, keepForComparison? }, saved: SavedMeal[], logs: MealLog[] }`, stored in localStorage under `mycalorie:v1`. Demo data uses `mycalorie:demo:v5`: 12 weeks of 3–4 real meals per day with items, built from Indian meal templates in `src/lib/demo.ts`, with an 18-day streak and a best run of 26. It uses the demo switch `mycalorie:demo-mode`, and the developer flag `mycalorie:developer`.
 - `MealItem`: `quantity`, `unit`, `baseQuantity`, `baseMacros`, plus optional `gramsPerUnit`, `weightUnit`, `uncertain`, `cookingFat` and `sourceId`. An item's macros scale linearly from its base (`src/lib/items.ts`).
 - `SavedMeal` (a regular): `macros` for 1×, plus optional `items` and `product`.
 - `MealLog`: `macros` as eaten, `portion`, `day` (the local date), and optional `items` and `savedMealId`.

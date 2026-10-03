@@ -12,7 +12,7 @@ import { NO_TARGETS, type AppState, type Macros, type MealItem, type MealLog, ty
  */
 
 const STORAGE_KEY = "mycalorie:v1";
-const DEMO_KEY = "mycalorie:demo:v4";
+const DEMO_KEY = "mycalorie:demo:v5";
 /** Set when demo mode is switched on in the app; `?demo` in the URL also turns it on. */
 const DEMO_MODE_KEY = "mycalorie:demo-mode";
 

@@ -13,9 +13,15 @@ const KEYBOARD_THRESHOLD = 80;
  */
 export function ViewportSync() {
   useEffect(() => {
+    const root = document.documentElement;
+    // iOS's own flag for an app opened from the home screen; the display-mode query backs it up.
+    const standalone =
+      (navigator as Navigator & { standalone?: boolean }).standalone === true ||
+      window.matchMedia("(display-mode: standalone)").matches;
+    root.toggleAttribute("data-standalone", standalone);
+
     const viewport = window.visualViewport;
     if (!viewport) return;
-    const root = document.documentElement;
     let frame = 0;
 
     const update = () => {

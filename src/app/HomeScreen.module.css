@@ -22,6 +22,10 @@
   gap: 8px;
 }
 
+.status > * {
+  white-space: nowrap;
+}
+
 .hit {
   color: var(--protein);
 }

@@ -91,36 +91,140 @@ function seeded(seed: number) {
 }
 
 /** One summary entry per past day: a recent 18-day streak, a best run of 26 and a patchy rest. */
-function demoHistory(y: number, m: number, d: number): MealLog[] {
+/* Past days: three or four real meals each, built from typical Indian meals with their items. */
+
+type Slot = "breakfast" | "lunch" | "snack" | "dinner";
+
+type MealTemplate = {
+  key: string;
+  name: string;
+  slot: Slot;
+  /** Linked regular, so shelf ordering learns from history like real use would. */
+  regularId?: string;
+  items: [name: string, quantity: number, unit: string, macros: Macros, extra?: Partial<MealItem>][];
+};
+
+const m = (protein: number, kcal: number, carbs: number, fat: number): Macros => ({ protein, kcal, carbs, fat });
+const OIL = (tsp: number): [string, number, string, Macros, Partial<MealItem>] => [
+  "Oil / ghee",
+  tsp,
+  "tsp",
+  m(0, 40 * tsp, 0, 4.5 * tsp),
+  { cookingFat: true, gramsPerUnit: 4.5 },
+];
+const ROTI: [string, number, string, Macros, Partial<MealItem>] = ["Roti", 2, "roti", m(7, 230, 36, 2), { gramsPerUnit: 38 }];
+
+const TEMPLATES: MealTemplate[] = [
+  { key: "idli", name: "Idli sambar", slot: "breakfast", regularId: "demo-idli",
+    items: [["Idli", 4, "idli", m(8, 230, 48, 1), { gramsPerUnit: 40 }], ["Sambar", 1, "katori", m(5, 100, 12, 3), { gramsPerUnit: 150, weightUnit: "ml" }]] },
+  { key: "bhurji", name: "Egg bhurji, toast", slot: "breakfast",
+    items: [["Egg bhurji", 3, "egg", m(19, 210, 2, 15), { gramsPerUnit: 55 }], OIL(1), ["Brown bread toast", 2, "slice", m(6, 150, 26, 2), { gramsPerUnit: 28 }]] },
+  { key: "poha", name: "Poha, chai", slot: "breakfast",
+    items: [["Poha", 1, "plate", m(6, 270, 45, 7), { gramsPerUnit: 180 }], ["Masala chai", 1, "cup", m(3, 90, 11, 3), { gramsPerUnit: 150, weightUnit: "ml" }]] },
+  { key: "dosa", name: "Masala dosa", slot: "breakfast",
+    items: [["Masala dosa", 1, "dosa", m(6, 300, 44, 11), { gramsPerUnit: 180 }], ["Sambar", 1, "katori", m(5, 100, 12, 3), { gramsPerUnit: 150, weightUnit: "ml" }]] },
+  { key: "chicken-rice", name: "Chicken curry rice", slot: "lunch", regularId: "demo-chicken-rice",
+    items: [["Chicken curry", 1, "katori", m(31, 280, 8, 13), { gramsPerUnit: 180 }], ["Steamed rice", 1, "cup", m(5, 210, 46, 1), { gramsPerUnit: 160 }], OIL(1.5)] },
+  { key: "thali", name: "Dal, rice, roti thali", slot: "lunch", regularId: "demo-thali",
+    items: [["Dal tadka", 1, "katori", m(9, 180, 24, 5), { gramsPerUnit: 150 }], ["Jeera rice", 1, "cup", m(4, 220, 42, 4), { gramsPerUnit: 160 }], ROTI, ["Aloo gobi", 1, "katori", m(3, 130, 14, 7), { gramsPerUnit: 120 }], OIL(1)] },
+  { key: "rajma", name: "Rajma chawal", slot: "lunch",
+    items: [["Rajma", 1, "katori", m(10, 210, 30, 5), { gramsPerUnit: 150 }], ["Steamed rice", 1, "cup", m(5, 210, 46, 1), { gramsPerUnit: 160 }], OIL(1)] },
+  { key: "sprouts", name: "Moong sprouts chaat", slot: "snack",
+    items: [["Moong sprouts chaat", 1, "katori", m(14, 210, 30, 4), { gramsPerUnit: 150 }]] },
+  { key: "whey", name: "Whey shake", slot: "snack",
+    items: [["Whey protein", 1, "scoop", m(24, 130, 3, 2), { gramsPerUnit: 33, sourceId: "demo-whey" }], ["Milk", 200, "ml", m(6.5, 130, 10, 7)]] },
+  { key: "chana", name: "Roasted chana", slot: "snack",
+    items: [["Roasted chana", 40, "g", m(8, 150, 23, 2)]] },
+  { key: "dahi", name: "Dahi, banana", slot: "snack",
+    items: [["Dahi", 1, "katori", m(6, 90, 7, 4), { gramsPerUnit: 150 }], ["Banana", 1, "piece", m(1, 105, 27, 0.4), { gramsPerUnit: 118 }]] },
+  { key: "chicken-roti", name: "Chicken curry, 2 roti", slot: "dinner", regularId: "demo-chicken-roti",
+    items: [["Chicken curry", 1, "katori", m(31, 290, 6, 11), { gramsPerUnit: 180 }], ROTI, OIL(2)] },
+  { key: "paneer", name: "Paneer butter masala, 2 roti", slot: "dinner", regularId: "demo-paneer",
+    items: [["Paneer butter masala", 1, "katori", m(14, 320, 12, 24), { gramsPerUnit: 150 }], ROTI, OIL(1)] },
+  { key: "egg-curry", name: "Egg curry, 2 roti", slot: "dinner",
+    items: [["Egg curry", 2, "egg", m(13, 220, 8, 15), { gramsPerUnit: 90 }], ROTI] },
+  { key: "khichdi", name: "Dal khichdi", slot: "dinner",
+    items: [["Dal khichdi", 1, "plate", m(12, 350, 55, 8), { gramsPerUnit: 300 }], OIL(1)] },
+];
+
+/** The higher-protein choice for each slot, used to lift a streak day over the target. */
+const PROTEIN_UPGRADE: Record<Slot, string> = { breakfast: "bhurji", lunch: "chicken-rice", snack: "whey", dinner: "chicken-roti" };
+/** The lighter choice for each slot, used to keep a non-streak day under the target. */
+const PROTEIN_DOWNGRADE: Record<Slot, string> = { breakfast: "poha", lunch: "rajma", snack: "dahi", dinner: "khichdi" };
+
+const SLOT_TIMES: Record<Slot, [hour: number, minute: number]> = { breakfast: [8, 15], lunch: [13, 20], snack: [17, 10], dinner: [20, 45] };
+const SLOTS: Slot[] = ["breakfast", "lunch", "snack", "dinner"];
+const DEMO_PROTEIN_TARGET = 100;
+
+const template = (key: string) => TEMPLATES.find((entry) => entry.key === key)!;
+const proteinOf = (keys: string[]) =>
+  keys.reduce((sum, key) => sum + template(key).items.reduce((total, [, , , macros]) => total + macros.protein, 0), 0);
+
+function mealLog(meal: MealTemplate, id: string, at: Date): MealLog {
+  const items = meal.items.map(([name, quantity, unit, macros, extra], index) =>
+    demoItem(`${id}-${index}`, name, quantity, unit, macros, extra),
+  );
+  const total = items.reduce(
+    (sum, item) => ({
+      protein: sum.protein + item.baseMacros.protein,
+      kcal: sum.kcal + item.baseMacros.kcal,
+      carbs: sum.carbs + item.baseMacros.carbs,
+      fat: sum.fat + item.baseMacros.fat,
+    }),
+    m(0, 0, 0, 0),
+  );
+  return {
+    id,
+    name: meal.name,
+    macros: { protein: Math.round(total.protein), kcal: Math.round(total.kcal), carbs: Math.round(total.carbs), fat: Math.round(total.fat) },
+    portion: 1,
+    eatenAt: at.getTime(),
+    day: dayKey(at),
+    savedMealId: meal.regularId,
+    items,
+  };
+}
+
+/** A recent 18-day streak, a best run of 26, and a patchy rest; most days skip the snack. */
+function demoHistory(y: number, mo: number, d: number): MealLog[] {
   const random = seeded(7);
+  const pick = <T,>(options: T[]) => options[Math.floor(random() * options.length)];
   const history: MealLog[] = [];
-  for (let back = 1; back <= HISTORY_DAYS; back++) {
-    const date = new Date(y, m - 1, d - back, 21, 0);
-    const roll = random();
+
+  for (let back = HISTORY_DAYS; back >= 1; back--) {
     const onRun = back <= CURRENT_STREAK || (back >= BEST_RUN.from && back <= BEST_RUN.to);
-    if (!onRun && roll < 0.12) continue;
-    const ratio = onRun ? 1 + roll * 0.2 : back === CURRENT_STREAK + 1 ? 0.78 : 0.45 + roll * 0.5;
-    const protein = Math.round(100 * ratio);
-    history.push({
-      id: `demo-history-${back}`,
-      name: "Day's meals",
-      macros: {
-        protein,
-        kcal: Math.round(1700 + random() * 500),
-        carbs: Math.round(190 + random() * 80),
-        fat: Math.round(45 + random() * 25),
-      },
-      portion: 1,
-      eatenAt: date.getTime(),
-      day: dayKey(date),
-    });
+    if (!onRun && random() < 0.12) continue;
+
+    const slots = SLOTS.filter((slot) => slot !== "snack" || onRun || random() < 0.5);
+    const meals: Partial<Record<Slot, string>> = Object.fromEntries(
+      slots.map((slot) => [slot, pick(TEMPLATES.filter((entry) => entry.slot === slot)).key]),
+    );
+    const keys = () => Object.values(meals) as string[];
+
+    // Streak days must reach the target, the rest must not; swap meals one slot at a time, in a random order, until true.
+    const swapOrder = [...SLOTS].sort(() => random() - 0.5);
+    for (const slot of swapOrder) {
+      if (onRun && proteinOf(keys()) >= DEMO_PROTEIN_TARGET) break;
+      if (!onRun && proteinOf(keys()) < DEMO_PROTEIN_TARGET) break;
+      if (onRun) meals[slot] = PROTEIN_UPGRADE[slot];
+      else if (meals[slot]) meals[slot] = PROTEIN_DOWNGRADE[slot];
+    }
+    if (onRun && proteinOf(keys()) < DEMO_PROTEIN_TARGET) meals.snack = "whey";
+
+    for (const slot of SLOTS) {
+      const key = meals[slot];
+      if (!key) continue;
+      const [hour, minute] = SLOT_TIMES[slot];
+      const at = new Date(y, mo - 1, d - back, hour, minute + Math.floor(random() * 40));
+      history.push(mealLog(template(key), `demo-history-${back}-${slot}`, at));
+    }
   }
-  return history.reverse();
+  return history;
 }
 
 export function demoState(today: string): AppState {
-  const [y, m, d] = today.split("-").map(Number);
-  const at = (hour: number, minute: number) => new Date(y, m - 1, d, hour, minute).getTime();
+  const [y, mo, d] = today.split("-").map(Number);
+  const at = (hour: number, minute: number) => new Date(y, mo - 1, d, hour, minute).getTime();
   const meal = (id: string) => DEMO_MEALS.find((entry) => entry.id === id)!;
   const fromShelf = (id: string, logId: string, hour: number, minute: number) => ({
     id: logId,
@@ -136,7 +240,7 @@ export function demoState(today: string): AppState {
     settings: { targets: { protein: 100, kcal: 2000, carbs: 240, fat: 60 } },
     saved: DEMO_MEALS,
     logs: [
-      ...demoHistory(y, m, d),
+      ...demoHistory(y, mo, d),
       fromShelf("demo-idli", "demo-log-1", 8, 15),
       {
         id: "demo-log-2",

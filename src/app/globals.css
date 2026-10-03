@@ -46,11 +46,18 @@
   color-scheme: dark;
 }
 
-/* Installed to the home screen the app draws under the translucent status bar; never let content start inside it. */
+/*
+ * Installed to the home screen the app draws under the translucent status bar; never let content start inside it.
+ * Two signals, because iOS doesn't always match the media query: display-mode, and data-standalone from ViewportSync.
+ */
 @media (display-mode: standalone) {
   :root {
     --top-inset: max(env(safe-area-inset-top, 0px), 54px);
   }
+}
+
+:root[data-standalone] {
+  --top-inset: max(env(safe-area-inset-top, 0px), 54px);
 }
 
 *,
@@ -63,6 +70,19 @@ html {
   -webkit-text-size-adjust: 100%;
   background: var(--ground);
   scrollbar-color: var(--seam-strong) var(--ground);
+}
+
+/* A solid strip behind the status bar, so scrolled content slides under it instead of colliding with the clock. */
+body::before {
+  content: "";
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--top-inset);
+  background: var(--ground);
+  pointer-events: none;
 }
 
 body {

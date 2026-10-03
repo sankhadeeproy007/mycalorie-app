@@ -57,7 +57,7 @@ function StreakStatus({ current, hitToday, hasTarget }: { current: number; hitTo
   return (
     <span className={styles.streak}>
       {dot}
-      {current > 0 ? `${current}d streak · today open` : "no streak yet"}
+      {current > 0 ? `${current}d streak` : "no streak yet"}
     </span>
   );
 }
@@ -214,7 +214,7 @@ export function HomeScreen() {
             <span onClick={tapDate}>{view && formatStatusDate(today)}</span>
             {view && isDemo() && (
               <button type="button" className={styles.demo} onClick={() => setDemoMode(false)}>
-                demo data · exit
+                demo · exit
               </button>
             )}
           </span>
