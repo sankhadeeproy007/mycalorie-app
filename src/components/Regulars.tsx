@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pencil, SlidersHorizontal, UtensilsCrossed, X } from "lucide-react";
 import { PORTIONS } from "@/lib/portions";
+import { useFolded } from "@/lib/use-folded";
 import type { SavedMeal } from "@/lib/types";
 import { Panel } from "./Panel";
 import styles from "./Regulars.module.css";
@@ -14,32 +15,15 @@ type RegularsProps = {
   onEdit: (meal: SavedMeal) => void;
 };
 
-const COLLAPSED_KEY = "mycalorie:regulars-collapsed";
-
-function readCollapsed(): boolean {
-  try {
-    return typeof window !== "undefined" && window.localStorage.getItem(COLLAPSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
 /** Saved meals as photo tiles: one tap logs a 1× portion, the corner chip picks another. */
 export function Regulars({ meals, onLog, onAdjust, onEdit }: RegularsProps) {
   const [portionFor, setPortionFor] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [folded, setFolded] = useFolded("mycalorie:regulars-collapsed");
+  const collapsed = folded ?? false;
 
   const toggle = () => {
     setPortionFor(null);
-    setCollapsed((was) => {
-      try {
-        if (was) window.localStorage.removeItem(COLLAPSED_KEY);
-        else window.localStorage.setItem(COLLAPSED_KEY, "1");
-      } catch {
-        // Not remembered without storage; the panel still folds.
-      }
-      return !was;
-    });
+    setFolded(!collapsed);
   };
 
   return (

@@ -16,6 +16,7 @@ import { formatAmount } from "@/lib/format";
 import { deliverFile, isAbort } from "@/lib/share-file";
 import { readRealState, replaceRealState } from "@/lib/store";
 import { useSyncStatus, type SyncStatus } from "@/lib/sync";
+import { useFolded } from "@/lib/use-folded";
 import { Panel } from "./Panel";
 import styles from "./Backup.module.css";
 
@@ -210,6 +211,9 @@ export function BackupPanel({ today, demo, hasData, onNotice }: PanelProps) {
   const sync = useSyncStatus();
   const actions = useBackupActions(onNotice);
   const cloud = cloudOn(sync);
+  // With sync running there's rarely anything to do here, so it starts folded to its status line.
+  const [folded, setFolded] = useFolded("mycalorie:backup-collapsed");
+  const collapsed = folded ?? (sync !== null && sync.phase !== "off");
   const lastFile = backup ? `last: ${sinceLast(backup.lastAt, today)}` : undefined;
 
   return (
@@ -217,6 +221,7 @@ export function BackupPanel({ today, demo, hasData, onNotice }: PanelProps) {
       title={cloud ? "sync & backup" : "backup"}
       meta={cloud && sync ? SYNC_META[sync.phase] : lastFile}
       headingId="backup-heading"
+      collapsible={{ collapsed, onToggle: () => setFolded(!collapsed) }}
     >
       {actions.input}
       <p className={styles.text}>
