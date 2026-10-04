@@ -38,6 +38,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 | `GEMINI_API_KEY` | Google AI Studio key, free tier. Never enable billing, or the free allowance ends. |
 | `GEMINI_MODEL` | Optional model override. |
 | `ACCESS_CODE` | 4–8 digits for the unlock screen. Changing it signs every device out. |
+| `ACCESS_CODES` | Other people: `name:code,name:code`, codes the same length as `ACCESS_CODE`. Malformed entries are skipped with a log warning. |
 | `SESSION_SECRET` | Random string that signs the session cookie (`openssl rand -hex 32`). |
 | `ANTHROPIC_API_KEY` | Claude for "Try Claude" in the app (Production on Vercel), and for `npm run compare` locally. Without it the button says Claude isn't set up. |
 | `CLAUDE_EFFORT` | Optional: `low` (default), `medium` or `high` for "Try Claude". |
@@ -120,6 +121,12 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 - A backup is `mycalorie-backup-YYYY-MM-DD.json`: `{ app: "mycalorie", version: 1, exportedAt, data: AppState }`, the real data only (regular photos included, comparison photos not). It goes to the share sheet (Save to Files) via `src/lib/share-file.ts`, or downloads where sharing isn't available.
 - Restore validates the file, shows its date and counts, and replaces all real data after a confirm. A bad file shows an error. Restore and backup are off in demo mode.
 - Status lives in `mycalorie:backup` (`lastAt`, `dismissedDay`). A restore records the file's own date as the last backup.
+
+**People (`src/lib/access.ts`, `src/lib/session.ts`, `src/lib/current-user.ts`):**
+- The owner signs in with `ACCESS_CODE`; others come from `ACCESS_CODES`. The session cookie is `<user>.<HMAC of user and code>`; the owner's older cookies (an HMAC of the code alone) are still accepted.
+- The home page reads the session per request and passes the user to `HomeScreen`, which calls `setCurrentUser` before anything reads storage. The owner keeps the original keys (`mycalorie:v1`, `mycalorie:sync`, `mycalorie:backup`, and in Redis `mycalorie:state` / `rev` / `snapshot:*`); others get `…:<user>` in the browser and `mycalorie:u:<user>:…` in Redis. Demo data and device preferences (folded panels, developer flag) are shared per device.
+- Owner only: "Try Claude" (the route returns 403 for anyone else) and the model comparison panel and samples.
+- Tested end to end with two people, a legacy owner cookie, a forged cookie, and malformed entries (`.local-test/users-test.mjs`).
 
 ## Data model (`src/lib/types.ts`)
 

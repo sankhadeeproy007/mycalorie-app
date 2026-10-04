@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { isAppState } from "./app-state-check";
+import { userKey } from "./current-user";
 import { dayKey } from "./day";
 import type { AppState } from "./types";
 
@@ -41,7 +42,7 @@ export function parseBackup(text: string): ParsedBackup | null {
 /** When the last backup was saved, and the day the daily prompt was waved off. */
 export type BackupStatus = { lastAt: number | null; dismissedDay: string | null };
 
-const STATUS_KEY = "mycalorie:backup";
+const statusKey = () => userKey("mycalorie:backup");
 const EMPTY_STATUS: BackupStatus = { lastAt: null, dismissedDay: null };
 
 let status: BackupStatus | null = null;
@@ -50,7 +51,7 @@ const listeners = new Set<() => void>();
 function getSnapshot(): BackupStatus {
   if (status !== null) return status;
   try {
-    const raw = window.localStorage.getItem(STATUS_KEY);
+    const raw = window.localStorage.getItem(statusKey());
     status = raw ? { ...EMPTY_STATUS, ...(JSON.parse(raw) as Partial<BackupStatus>) } : EMPTY_STATUS;
   } catch {
     status = EMPTY_STATUS;
@@ -61,7 +62,7 @@ function getSnapshot(): BackupStatus {
 function update(changes: Partial<BackupStatus>) {
   status = { ...getSnapshot(), ...changes };
   try {
-    window.localStorage.setItem(STATUS_KEY, JSON.stringify(status));
+    window.localStorage.setItem(statusKey(), JSON.stringify(status));
   } catch {
     // Without storage the prompt simply comes back next time.
   }

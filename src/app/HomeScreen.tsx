@@ -29,6 +29,7 @@ import {
 } from "@/lib/progress";
 import { orderShelf } from "@/lib/shelf-order";
 import { startSync } from "@/lib/sync";
+import { isOwner, setCurrentUser } from "@/lib/current-user";
 import {
   isDemo,
   logMeal,
@@ -88,7 +89,10 @@ function formatStatusDate(key: string): string {
     .replace(",", "");
 }
 
-export function HomeScreen() {
+export function HomeScreen({ userId }: { userId: string }) {
+  // Before anything reads storage: each person's data lives under their own keys.
+  setCurrentUser(userId);
+  const owner = isOwner();
   const state = useAppState();
   const today = useToday();
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
@@ -206,7 +210,7 @@ export function HomeScreen() {
     const log = logMeal({ name, macros, items, savedMealId: regularId });
     announceLog(log);
     // Demo meals are not real meals, so they never join the comparison set.
-    if (capture && state?.settings.keepForComparison && !isDemo()) void keepSample(capture, log);
+    if (capture && owner && state?.settings.keepForComparison && !isDemo()) void keepSample(capture, log);
   };
 
   const removeFromToday = (log: MealLog) => {
@@ -298,11 +302,13 @@ export function HomeScreen() {
               onEdit={(regular) => setSheet({ kind: "edit", regular })}
             />
             <EatenToday logs={view.todaysLogs} onRemove={removeFromToday} onSaveToRegulars={addToRegulars} onEdit={editLog} />
-            <ComparisonPanel
-              enabled={Boolean(state?.settings.keepForComparison)}
-              onToggle={setKeepForComparison}
-              revision={comparisonRevision}
-            />
+            {owner && (
+              <ComparisonPanel
+                enabled={Boolean(state?.settings.keepForComparison)}
+                onToggle={setKeepForComparison}
+                revision={comparisonRevision}
+              />
+            )}
             <BackupPanel today={today} demo={isDemo()} hasData={hasData} onNotice={notify} />
             {(developerShown || isDemo()) && (
               <DeveloperPanel
@@ -353,6 +359,7 @@ export function HomeScreen() {
       />
       <MealSheet
         request={sheet}
+        allowClaude={owner}
         regulars={view?.regulars ?? []}
         onLog={logEntry}
         onLogRegular={(regular) => {

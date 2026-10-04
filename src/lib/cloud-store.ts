@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "redis";
 import { isAppState } from "./app-state-check";
 import type { AppState } from "./types";
+import { OWNER_ID } from "./users";
 
 /**
  * The cloud copy of the app's data, in Redis: over Upstash's REST API, or a direct connection from a
@@ -10,9 +11,12 @@ import type { AppState } from "./types";
  * Each write also keeps that day's last state for 30 days, as a way back from a bad overwrite.
  */
 
-const STATE_KEY = "mycalorie:state";
-const REV_KEY = "mycalorie:rev";
-const SNAPSHOT_PREFIX = "mycalorie:snapshot:";
+/** The owner keeps the original keys; everyone else's live under their own prefix. */
+function keysFor(user: string) {
+  const prefix = user === OWNER_ID ? "mycalorie:" : `mycalorie:u:${user}:`;
+  return { state: `${prefix}state`, rev: `${prefix}rev`, snapshot: `${prefix}snapshot:` };
+}
+
 const SNAPSHOT_SECONDS = 60 * 60 * 24 * 30;
 
 type Backend = { kind: "rest"; url: string; token: string } | { kind: "tcp"; url: string };
@@ -88,12 +92,13 @@ export type CloudCopy = { rev: number; state: AppState | null; updatedAt: number
 
 type StoredState = { state: AppState; updatedAt: number };
 
-export async function readCloud(have?: number): Promise<CloudCopy> {
+export async function readCloud(user: string, have?: number): Promise<CloudCopy> {
+  const keys = keysFor(user);
   if (have !== undefined) {
-    const current = Number((await redis<string | null>(["GET", REV_KEY])) ?? 0);
+    const current = Number((await redis<string | null>(["GET", keys.rev])) ?? 0);
     if (current === have) return { rev: current, state: null, updatedAt: null, unchanged: true };
   }
-  const [rev, raw] = await redis<[string | null, string | null]>(["MGET", REV_KEY, STATE_KEY]);
+  const [rev, raw] = await redis<[string | null, string | null]>(["MGET", keys.rev, keys.state]);
   let stored: StoredState | null = null;
   try {
     stored = raw ? (JSON.parse(raw) as StoredState) : null;
@@ -114,18 +119,19 @@ return {1, redis.call('INCR', KEYS[1])}
 `;
 
 export async function writeCloud(
-  state: AppState,
-  baseRev: number,
-  day: string,
+  user: string,
+  change: { state: AppState; baseRev: number; day: string },
 ): Promise<{ saved: true; rev: number } | { saved: false }> {
+  const { state, baseRev, day } = change;
+  const keys = keysFor(user);
   const stored: StoredState = { state, updatedAt: Date.now() };
   const [saved, rev] = await redis<[number, number]>([
     "EVAL",
     WRITE_IF_CURRENT,
     3,
-    REV_KEY,
-    STATE_KEY,
-    `${SNAPSHOT_PREFIX}${day}`,
+    keys.rev,
+    keys.state,
+    `${keys.snapshot}${day}`,
     baseRev,
     JSON.stringify(stored),
     SNAPSHOT_SECONDS,

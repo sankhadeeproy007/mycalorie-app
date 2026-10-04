@@ -55,6 +55,8 @@ The deployed app opens on an access-code screen. Set two environment variables (
 - `ACCESS_CODE`: 4–8 digits. Change it any time to sign every device out.
 - `SESSION_SECRET`: a long random string, e.g. the output of `openssl rand -hex 32`.
 
+To let other people use the app, add `ACCESS_CODES` as `name:code` pairs separated by commas, e.g. `priya:48291736,rahul:20556611`. Names are lower-case letters, digits or dashes; each code has the same number of digits as `ACCESS_CODE` and must differ from every other code. Each person gets their own meals, regulars, targets and cloud copy, and changing a code signs only that person out. "Try Claude" and the model comparison stay with the owner (the `ACCESS_CODE` holder), since Claude is paid for; everyone shares the free Gemini allowance.
+
 A device stays unlocked for six months. Five wrong codes in a row lock that connection out for 15 minutes. When you run locally without `ACCESS_CODE`, the lock is off; in production, a missing code keeps the app locked.
 
 ## Where data lives

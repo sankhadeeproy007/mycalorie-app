@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import {
   accessConfig,
-  isCorrectCode,
   SESSION_COOKIE,
   SESSION_MAX_AGE_SECONDS,
   sessionToken,
+  userForCode,
 } from "@/lib/access";
 
 const MAX_FAILURES = 5;
@@ -49,7 +49,8 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { code?: unknown } | null;
   const attempt = typeof body?.code === "string" ? body.code : "";
 
-  if (!isCorrectCode(attempt, config)) {
+  const user = userForCode(attempt, config);
+  if (!user) {
     recordFailure(address, now);
     await new Promise((resolve) => setTimeout(resolve, FAILURE_DELAY_MS));
     return NextResponse.json({ error: "wrong_code" }, { status: 401 });
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 
   failures.delete(address);
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(SESSION_COOKIE, sessionToken(config.code, config.secret), {
+  response.cookies.set(SESSION_COOKIE, sessionToken(user, config.secret), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

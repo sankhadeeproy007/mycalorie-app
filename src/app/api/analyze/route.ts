@@ -1,6 +1,8 @@
 import { mockClaudeAnalysis, mockPhotoAnalysis } from "@/lib/analysis-fixtures";
 import { clip, mockingGemini, respondWithAnalysis } from "@/lib/analysis-response";
 import { analyzePhoto, type RegularSummary } from "@/lib/analyze-meal";
+import { currentUser } from "@/lib/session";
+import { OWNER_ID } from "@/lib/users";
 
 const MAX_BASE64_LENGTH = 4_000_000;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -31,6 +33,10 @@ export async function POST(request: Request) {
 
   const context = { hint: clip(body?.hint, MAX_HINT), outside: body?.outside === true, regulars: readRegulars(body?.regulars) };
   const model = body?.model === "claude" ? "claude" : "gemini";
+  // Claude is paid for by the owner, so only the owner can ask it.
+  if (model === "claude" && (await currentUser()) !== OWNER_ID) {
+    return Response.json({ error: "not_configured", detail: "claude is for the owner only" }, { status: 403 });
+  }
   if (mockingGemini()) {
     return Response.json(model === "claude" ? mockClaudeAnalysis(context.hint) : mockPhotoAnalysis(context.hint));
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { userKey } from "./current-user";
 import { dayKey } from "./day";
 import { demoState } from "./demo";
 import { roundMacros, scaleItems, scaleMacros } from "./items";
@@ -11,7 +12,8 @@ import { NO_TARGETS, type AppState, type Macros, type MealItem, type MealLog, ty
  * `sync.ts` mirrors the real data to the cloud through `onRealDataChange` and `writeRealState`.
  */
 
-const STORAGE_KEY = "mycalorie:v1";
+/** The signed-in person's data; see `current-user.ts`. */
+const realKey = () => userKey("mycalorie:v1");
 const DEMO_KEY = "mycalorie:demo:v5";
 /** Set when demo mode is switched on in the app; `?demo` in the URL also turns it on. */
 const DEMO_MODE_KEY = "mycalorie:demo-mode";
@@ -53,7 +55,7 @@ export function isDemo(): boolean {
 }
 
 function storageKey(): string {
-  return isDemo() ? DEMO_KEY : STORAGE_KEY;
+  return isDemo() ? DEMO_KEY : realKey();
 }
 
 function load(): AppState {
@@ -199,7 +201,7 @@ export function restoreSavedMeal(meal: SavedMeal, linkedLogIds: string[]) {
 /** The real data, as stored, for a backup; demo data is never backed up. */
 export function readRealState(): AppState {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(realKey());
     if (raw) return migrate(JSON.parse(raw));
   } catch {
     // Fall through to nothing stored.
@@ -215,7 +217,7 @@ export function replaceRealState(next: AppState) {
 
 /** Takes in the cloud copy (or a merge with it) without counting as a change to send back. */
 export function writeRealState(next: AppState) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrate(next)));
+  window.localStorage.setItem(realKey(), JSON.stringify(migrate(next)));
   if (!isDemo()) reload();
 }
 

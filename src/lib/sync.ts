@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { isAppState } from "./app-state-check";
+import { userKey } from "./current-user";
 import { dayKey } from "./day";
 import { onRealDataChange, readRealState, writeRealState } from "./store";
 import type { AppState } from "./types";
@@ -29,13 +30,13 @@ type Meta = {
 export type SyncPhase = "checking" | "off" | "syncing" | "synced" | "offline" | "error";
 export type SyncStatus = { phase: SyncPhase; syncedAt: number | null };
 
-const META_KEY = "mycalorie:sync";
+const metaKey = () => userKey("mycalorie:sync");
 const SEND_DELAY_MS = 1200;
 const MAX_CONFLICT_RETRIES = 2;
 
 function readMeta(): Meta {
   try {
-    const raw = window.localStorage.getItem(META_KEY);
+    const raw = window.localStorage.getItem(metaKey());
     if (raw) return JSON.parse(raw) as Meta;
   } catch {
     // Unreadable: start as if never synced.
@@ -48,7 +49,7 @@ function readMeta(): Meta {
 function saveMeta(changes: Partial<Meta>) {
   const next = { ...readMeta(), ...changes };
   try {
-    window.localStorage.setItem(META_KEY, JSON.stringify(next));
+    window.localStorage.setItem(metaKey(), JSON.stringify(next));
   } catch {
     // Without storage the next sync just starts over.
   }

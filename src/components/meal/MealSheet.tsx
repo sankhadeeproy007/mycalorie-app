@@ -58,6 +58,8 @@ export type LogChanges = { name: string; macros: Macros; items?: MealItem[] };
 
 type MealSheetProps = {
   request: SheetRequest | null;
+  /** Claude is paid for by the owner, so only the owner gets the switch. */
+  allowClaude: boolean;
   regulars: SavedMeal[];
   onLog: (entry: LogEntry) => void;
   onLogRegular: (regular: SavedMeal) => void;
@@ -168,6 +170,7 @@ type MealFlowProps = Omit<MealSheetProps, "request"> & { request: SheetRequest }
 
 function MealFlow({
   request,
+  allowClaude,
   regulars,
   onLog,
   onLogRegular,
@@ -294,7 +297,7 @@ function MealFlow({
               {stage.detail && <span className={`mono ${styles.failureDetail}`}>details: {stage.detail}</span>}
             </p>
           )}
-          {photo && stage.failure && (
+          {photo && allowClaude && stage.failure && (
             <ModelToggle active={active} geminiAnswered={false} claude={claude} onShow={() => undefined} onAskClaude={() => void askClaude()} />
           )}
 
@@ -324,7 +327,7 @@ function MealFlow({
         <LabelReview reading={stage.reading} photoFile={photo?.file} photoUrl={photo?.image.dataUrl} onLog={logWithCapture} />
       )}
 
-      {stage.name === "review" && photo && (answers.gemini || estimate || claude.kind !== "idle") && (
+      {stage.name === "review" && photo && allowClaude && (answers.gemini || estimate || claude.kind !== "idle") && (
         <ModelToggle
           active={active}
           geminiAnswered={estimate !== null}
