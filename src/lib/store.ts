@@ -7,8 +7,8 @@ import { roundMacros, scaleItems, scaleMacros } from "./items";
 import { NO_TARGETS, type AppState, type Macros, type MealItem, type MealLog, type ProductInfo, type SavedMeal, type Targets } from "./types";
 
 /**
- * Browser-local store. It sits behind these functions so the Supabase
- * milestone can replace persistence without touching the UI.
+ * Browser-local store: the app always reads and writes here, so it opens instantly and works offline.
+ * `sync.ts` mirrors the real data to the cloud through `onRealDataChange` and `writeRealState`.
  */
 
 const STORAGE_KEY = "mycalorie:v1";
@@ -32,6 +32,15 @@ function migrate(saved: Omit<AppState, "settings"> & { settings?: LegacySettings
 
 let state: AppState | null = null;
 const listeners = new Set<() => void>();
+
+/** Told about every change to the real data made in the app; `replaced` when it was swapped wholesale. */
+type ChangeListener = (change: { replaced: boolean }) => void;
+const changeListeners = new Set<ChangeListener>();
+
+export function onRealDataChange(listener: ChangeListener) {
+  changeListeners.add(listener);
+  return () => changeListeners.delete(listener);
+}
 
 export function isDemo(): boolean {
   if (typeof window === "undefined") return false;
@@ -69,6 +78,7 @@ function commit(update: (prev: AppState) => AppState) {
   state = update(getSnapshot());
   persist(state);
   listeners.forEach((listener) => listener());
+  if (!isDemo()) changeListeners.forEach((listener) => listener({ replaced: false }));
 }
 
 function getSnapshot(): AppState {
@@ -199,6 +209,12 @@ export function readRealState(): AppState {
 
 /** Replaces the real data with a backup. Throws when the phone has no room for it. */
 export function replaceRealState(next: AppState) {
+  writeRealState(next);
+  changeListeners.forEach((listener) => listener({ replaced: true }));
+}
+
+/** Takes in the cloud copy (or a merge with it) without counting as a change to send back. */
+export function writeRealState(next: AppState) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrate(next)));
   if (!isDemo()) reload();
 }

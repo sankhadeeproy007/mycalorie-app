@@ -53,6 +53,10 @@ The deployed app opens on an access-code screen. Set two environment variables (
 
 A device stays unlocked for six months. Five wrong codes in a row lock that connection out for 15 minutes. When you run locally without `ACCESS_CODE`, the lock is off; in production, a missing code keeps the app locked.
 
-## Where data lives (for now)
+## Where data lives
 
-Meals, saved meals and your target are stored in this browser's local storage. Moving to Supabase, so data syncs across devices, is the next data milestone (`src/lib/store.ts` is the only file that changes).
+The phone's local storage is the working copy, so the app opens instantly and works offline. With a Redis store connected, every change is also sent to the cloud, and a fresh install fills itself from there after the access code.
+
+To turn cloud sync on (free): in Vercel, open the project → **Storage** → **Create Database** → **Upstash for Redis** (free plan), and connect it to this project. That adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`; redeploy afterwards. A direct Upstash setup can use `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` instead. Without either pair, sync stays off and the app works from the phone alone.
+
+The cloud keeps one current copy plus the last state of each day for 30 days (`mycalorie:snapshot:YYYY-MM-DD`), as a way back from a bad overwrite. Backup files (Sync & backup panel) are a further copy.

@@ -51,3 +51,6 @@ next-env.d.ts
 
 # model comparison: personal photos, notes and reports
 /compare/
+
+# local end-to-end test harness
+/.local-test/

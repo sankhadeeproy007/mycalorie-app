@@ -11,10 +11,11 @@ import {
   useBackupStatus,
   type ParsedBackup,
 } from "@/lib/backup";
-import { dayKey, formatDayHeading } from "@/lib/day";
+import { dayKey, formatClock, formatDayHeading } from "@/lib/day";
 import { formatAmount } from "@/lib/format";
 import { deliverFile, isAbort } from "@/lib/share-file";
 import { readRealState, replaceRealState } from "@/lib/store";
+import { useSyncStatus, type SyncStatus } from "@/lib/sync";
 import { Panel } from "./Panel";
 import styles from "./Backup.module.css";
 
@@ -91,8 +92,11 @@ function useBackupActions(notify: Notify) {
 
 type Actions = ReturnType<typeof useBackupActions>;
 
+/** The cloud copy is set up, whether or not this moment's sync went through. */
+const cloudOn = (sync: SyncStatus | null) => sync !== null && sync.phase !== "off" && sync.phase !== "checking";
+
 /** Spells out what a restore will replace before it happens. */
-function ConfirmRestore({ actions, replacing }: { actions: Actions; replacing: boolean }) {
+function ConfirmRestore({ actions, replacing, cloud }: { actions: Actions; replacing: boolean; cloud: boolean }) {
   const { pending } = actions;
   if (!pending) return null;
   const from = pending.exportedAt ? formatDayHeading(dayKey(new Date(pending.exportedAt))) : "an unknown day";
@@ -100,7 +104,7 @@ function ConfirmRestore({ actions, replacing }: { actions: Actions; replacing: b
     <div className={styles.confirm} role="group" aria-label="Restore backup">
       <p className={styles.confirmText}>
         Backup from <strong>{from}</strong>: {formatAmount(pending.meals)} meals, {pending.regulars} regulars.
-        {replacing && " It replaces everything on this phone."}
+        {replacing && ` It replaces everything on this phone${cloud ? " and in the cloud" : ""}.`}
       </p>
       <div className={styles.actions}>
         <button type="button" className={styles.quiet} onClick={actions.cancel}>
@@ -118,12 +122,15 @@ type PromptProps = { today: string; hasData: boolean; onNotice: Notify };
 
 /**
  * Asks once a day, until acted on, to save a backup. On a fresh install with nothing in it,
- * it offers to restore one instead.
+ * it offers to restore one instead. While the cloud copy is in sync it stays away: that copy
+ * already covers a reinstall, and a fresh install fills itself from it.
  */
 export function BackupPrompt({ today, hasData, onNotice }: PromptProps) {
   const backup = useBackupStatus();
+  const sync = useSyncStatus();
   const actions = useBackupActions(onNotice);
-  if (!backup || !promptDue(backup, today)) return null;
+  const cloudCovers = sync === null || sync.phase === "checking" || sync.phase === "syncing" || sync.phase === "synced";
+  if (!backup || cloudCovers || !promptDue(backup, today)) return null;
 
   const dismiss = () => dismissPromptFor(today);
 
@@ -143,7 +150,7 @@ export function BackupPrompt({ today, hasData, onNotice }: PromptProps) {
       </p>
 
       {actions.pending ? (
-        <ConfirmRestore actions={actions} replacing={hasData} />
+        <ConfirmRestore actions={actions} replacing={hasData} cloud={cloudOn(sync)} />
       ) : (
         <div className={styles.actions}>
           <button type="button" className={styles.quiet} onClick={dismiss}>
@@ -173,22 +180,52 @@ export function BackupPrompt({ today, hasData, onNotice }: PromptProps) {
 
 type PanelProps = { today: string; demo: boolean; hasData: boolean; onNotice: Notify };
 
-/** Backup and restore whenever wanted, with when the last backup was made. */
+const SYNC_META: Record<SyncStatus["phase"], string> = {
+  checking: "checking…",
+  off: "",
+  syncing: "syncing…",
+  synced: "synced",
+  offline: "offline",
+  error: "sync failed",
+};
+
+function syncText(sync: SyncStatus): string {
+  const at = sync.syncedAt ? ` Last synced ${formatClock(sync.syncedAt)}.` : "";
+  switch (sync.phase) {
+    case "synced":
+    case "syncing":
+      return `Your data is kept in the cloud as well as on this phone, so a reinstall or a new phone gets it back after the access code.${at}`;
+    case "offline":
+      return `Offline. Changes stay on this phone and go to the cloud when you’re back online.${at}`;
+    case "error":
+      return `Couldn’t reach the cloud copy. Changes stay on this phone and are sent on the next try.${at}`;
+    default:
+      return "Your data lives only on this phone. A backup file in Files brings it back after a reinstall or on a new phone.";
+  }
+}
+
+/** Cloud sync status, plus backup files and restore whenever wanted. */
 export function BackupPanel({ today, demo, hasData, onNotice }: PanelProps) {
   const backup = useBackupStatus();
+  const sync = useSyncStatus();
   const actions = useBackupActions(onNotice);
+  const cloud = cloudOn(sync);
+  const lastFile = backup ? `last: ${sinceLast(backup.lastAt, today)}` : undefined;
 
   return (
-    <Panel title="backup" meta={backup ? `last: ${sinceLast(backup.lastAt, today)}` : undefined} headingId="backup-heading">
+    <Panel
+      title={cloud ? "sync & backup" : "backup"}
+      meta={cloud && sync ? SYNC_META[sync.phase] : lastFile}
+      headingId="backup-heading"
+    >
       {actions.input}
       <p className={styles.text}>
-        {demo
-          ? "Backups cover your real data. Switch off demo data to back up or restore."
-          : "Your data lives only on this phone. A backup file in Files brings it back after a reinstall or on a new phone."}
+        {demo ? "Sync and backups cover your real data. Switch off demo data to back up or restore." : sync && syncText(sync)}
       </p>
+      {cloud && !demo && lastFile && <p className={`mono ${styles.fileLine}`}>backup file · {lastFile}</p>}
       {!demo &&
         (actions.pending ? (
-          <ConfirmRestore actions={actions} replacing={hasData} />
+          <ConfirmRestore actions={actions} replacing={hasData} cloud={cloud} />
         ) : (
           <div className={styles.actions}>
             <button type="button" className={styles.quiet} onClick={actions.pick}>

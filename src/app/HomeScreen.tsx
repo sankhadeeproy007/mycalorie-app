@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { BackupPanel, BackupPrompt } from "@/components/Backup";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { DaySheet } from "@/components/DaySheet";
@@ -27,6 +27,7 @@ import {
   totalsByDay,
 } from "@/lib/progress";
 import { orderShelf } from "@/lib/shelf-order";
+import { startSync } from "@/lib/sync";
 import {
   isDemo,
   logMeal,
@@ -115,6 +116,9 @@ export function HomeScreen() {
       // Without storage the panel just won't stay revealed after a reload.
     }
   };
+  // Mirrors real data to the cloud copy, when one is set up on the server.
+  useEffect(() => startSync(), []);
+
   const [comparisonRevision, setComparisonRevision] = useState(0);
   const refreshComparison = () => setComparisonRevision((value) => value + 1);
   const [notice, setNotice] = useState<UndoNotice | null>(null);

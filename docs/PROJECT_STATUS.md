@@ -40,6 +40,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 | `ACCESS_CODE` | 4–8 digits for the unlock screen. Changing it signs every device out. |
 | `SESSION_SECRET` | Random string that signs the session cookie (`openssl rand -hex 32`). |
 | `ANTHROPIC_API_KEY` | Local `.env.local` only, for `npm run compare`. Not used by the app. |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Upstash Redis for cloud sync, set by Vercel's Upstash integration (`UPSTASH_REDIS_REST_URL` / `_TOKEN` also work). Without them sync is off. |
 | `MOCK_GEMINI=1` | Development only: canned AI answers so the screens work without a key. |
 
 ## What's built
@@ -47,7 +48,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 **Home screen** (`src/app/HomeScreen.tsx`), in the Console design: graphite panels, hairline seams, mono figures.
 - **Launch screen:** the 4×4 logo lights up in a wave, then fades. It's in the server HTML, so it shows instead of a blank screen.
 - **Status line:** the date on the left; on the right, a drawn status dot (a ring while today is open) with "18d streak", or "18d streak · hit". Tapping the date 5 times within 2.5 s reveals the developer panel.
-- **Backup prompt:** at the top on the first open of each day, until acted on: "Back up today" with Save backup / Not today. It's skipped on a day that already has a backup, and it never shows in demo mode. On a fresh install with no data it offers "Restore a backup?" instead.
+- **Backup prompt:** at the top on the first open of each day, until acted on: "Back up today" with Save backup / Not today. It's skipped on a day that already has a backup, never shows in demo mode, and stays away while cloud sync is working (it returns when sync is off, offline or failing). On a fresh install with no data it offers "Restore a backup?" instead.
 - **Protein panel:** "N g to go" (or "+N g past target"), a bar, and kcal/carbs/fat rows showing what's left and the target. The sliders icon opens the targets sheet.
 - **Day score panel:** "N so far", 7 past days plus today (outlined) on one 0–100 scale, and the 7-day average as a dashed line.
 - **Streak panel:**
@@ -56,7 +57,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 - **Regulars:** photo tiles. A tap logs 1×. The "1×" tab opens the portion picker (½, 1, 1½, 2) plus a pencil (**edit regular**) and "adjust before logging". Edit regular reopens it in the meal sheet: rename, change items, Save changes, or Remove from regulars (with undo, which also relinks past logs). A product is edited as its per-serving label values; `per100` is rescaled to match. Tapping the panel header folds it to just the header and count; the choice is remembered on the phone.
 - **Today:** the meal list, with save-to-regulars and remove (with undo). Tapping a meal opens **Edit meal**: the meal sheet with its items as eaten (or its totals, for a meal typed as numbers), Save changes, and Delete meal (with undo). Time, day and portion stay as logged. Saving also updates that meal's kept comparison sample (`updateSampleForLog`), so the comparison scores against the corrected numbers.
 - **Model comparison panel:** the "Keep meal photos for comparison" switch, a count, Export and Clear.
-- **Backup panel:** "last: today / N days ago / never", Back up now and Restore.
+- **Sync & backup panel:** with sync set up, the sync state (synced / syncing / offline / sync failed, last synced time) and the last backup file; without it, "backup" with the last backup date. Back up now and Restore either way.
 - **Developer panel (hidden):** a "Demo data" switch, "Reset demo data", and "hide".
 - **Dock:** "Log a meal" (photo) and "Type" (describe it, or enter numbers).
 
@@ -103,6 +104,13 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 - **In the app:** with the switch on, each logged photo is kept with its hint, the Outside setting, Gemini's first answer and what was finally logged. Export shares one JSON file. Demo meals are never kept, and undoing a log drops its photo.
 - **On the Mac:** `npm run compare -- --from <export.json>` re-sends each photo to Gemini Flash and Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5 (effort `low` by default). It scores each model against what was logged, adds a column for the app's original Gemini answer, measures real cost per photo, and writes `compare/report-*.html`. It asks before spending. `compare/` is git-ignored.
 
+**Cloud sync (`src/lib/sync.ts`, `src/app/api/data/route.ts`, `src/lib/cloud-store.ts`):**
+- The phone's localStorage stays the working copy. Upstash Redis (REST API over `fetch`, no SDK) holds `mycalorie:state` (`{ state, updatedAt }`), `mycalorie:rev`, and `mycalorie:snapshot:YYYY-MM-DD` (that day's last state, kept 30 days).
+- `/api/data`: GET (`?have=<rev>` skips the state when unchanged) and PUT `{ state, baseRev, day }`. A Lua script saves only if the cloud is still at `baseRev`; otherwise 409 with the current copy. The route checks the session itself as well as the proxy.
+- The phone keeps `mycalorie:sync` (`rev`, `dirty`, `replace`, `syncedAt`). It syncs on open, 1.2 s after each change (`onRealDataChange` in `store.ts`), on returning to the front, and on coming back online. A clean phone takes a newer cloud copy (`writeRealState`); a phone with unsent changes merges by id (its own version wins) and sends the result. A meal deleted on one device while another was offline with changes can come back. A backup restore is sent as is, replacing the cloud copy.
+- Demo data never syncs. Comparison photos stay on the phone.
+- Tested end to end against a stand-in Upstash server (`.local-test/`, git-ignored), not yet against real Upstash.
+
 **Backups (`src/lib/backup.ts`, `src/components/Backup.tsx`):**
 - A backup is `mycalorie-backup-YYYY-MM-DD.json`: `{ app: "mycalorie", version: 1, exportedAt, data: AppState }`, the real data only (regular photos included, comparison photos not). It goes to the share sheet (Save to Files) via `src/lib/share-file.ts`, or downloads where sharing isn't available.
 - Restore validates the file, shows its date and counts, and replaces all real data after a confirm. A bad file shows an error. Restore and backup are off in demo mode.
@@ -148,7 +156,6 @@ The owner confirmed a banana photo works. If a real call fails on the schema, th
 2. **If Claude wins:** add a provider setting and a `src/lib/providers/claude.ts` (the comparison script already has a working Claude call to reuse), then switch `analyze-meal.ts` to it. If the user asks for refusal fallbacks, add them deliberately.
 3. **Offered, not built:** a targets calculator (protein + calories + fat %, with carbs filled in). The owner entered all four targets by hand instead.
 4. **Later:**
-   - Supabase sync, so data survives a deleted app and works across devices (only `store.ts` should need to change).
    - Storing targets per day, so past days are scored against the targets in force then.
    - Changing or removing a regular's photo (editing covers name, items and values).
    - History and settings screens.
@@ -156,5 +163,5 @@ The owner confirmed a banana photo works. If a real call fails on the schema, th
    - iOS splash images, to cover the brief dark moment before the HTML loads.
 5. **Known limitations:**
    - The lockout counter lives in server memory.
-   - iOS may clear a home-screen app's storage after weeks without use, and deleting the app deletes its data. The daily backup covers meals, regulars and targets; export comparison photos separately.
+   - iOS may clear a home-screen app's storage after weeks without use, and deleting the app deletes its data. Cloud sync (once Redis is connected) or the backup file covers meals, regulars and targets; export comparison photos separately.
    - A logged meal's time and day can't be changed.

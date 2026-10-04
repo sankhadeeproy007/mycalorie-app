@@ -1,12 +1,13 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { isAppState } from "./app-state-check";
 import { dayKey } from "./day";
 import type { AppState } from "./types";
 
 /**
- * Backups are plain JSON files the owner keeps in Files (or iCloud Drive). Everything lives in this
- * browser's storage, so deleting the home-screen app deletes it too; a backup file is the way back.
+ * Backups are plain JSON files the owner keeps in Files (or iCloud Drive). With cloud sync on they're a
+ * second copy; without it, the phone's storage is the only one, and a backup file is the way back.
  */
 
 type BackupFile = { app: "mycalorie"; version: 1; exportedAt: number; data: AppState };
@@ -18,10 +19,6 @@ export function backupFile(state: AppState, now = Date.now()): File {
 
 export type ParsedBackup = { state: AppState; exportedAt: number; meals: number; regulars: number };
 
-const isObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
-const isMacros = (value: unknown) =>
-  isObject(value) && ["protein", "kcal", "carbs", "fat"].every((key) => typeof value[key] === "number");
-
 /** Reads a backup file's text; returns `null` when it isn't a Mycalorie backup or is damaged. */
 export function parseBackup(text: string): ParsedBackup | null {
   let body: unknown;
@@ -30,27 +27,14 @@ export function parseBackup(text: string): ParsedBackup | null {
   } catch {
     return null;
   }
-  if (!isObject(body) || body.app !== "mycalorie" || !isObject(body.data)) return null;
-  const { settings, saved, logs } = body.data;
-  if (!isObject(settings) || !isObject(settings.targets) || !Array.isArray(saved) || !Array.isArray(logs)) return null;
-  const logsOk = logs.every(
-    (log) =>
-      isObject(log) &&
-      typeof log.id === "string" &&
-      typeof log.name === "string" &&
-      typeof log.day === "string" &&
-      typeof log.eatenAt === "number" &&
-      isMacros(log.macros),
-  );
-  const savedOk = saved.every(
-    (meal) => isObject(meal) && typeof meal.id === "string" && typeof meal.name === "string" && isMacros(meal.macros),
-  );
-  if (!logsOk || !savedOk) return null;
+  if (typeof body !== "object" || body === null) return null;
+  const { app, data, exportedAt } = body as Record<string, unknown>;
+  if (app !== "mycalorie" || !isAppState(data)) return null;
   return {
-    state: body.data as AppState,
-    exportedAt: typeof body.exportedAt === "number" ? body.exportedAt : 0,
-    meals: logs.length,
-    regulars: saved.length,
+    state: data,
+    exportedAt: typeof exportedAt === "number" ? exportedAt : 0,
+    meals: data.logs.length,
+    regulars: data.saved.length,
   };
 }
 
