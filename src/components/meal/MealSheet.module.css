@@ -278,10 +278,105 @@
   vertical-align: 1px;
 }
 
-.itemProtein {
+/* The item's figures double as the way into correcting them. */
+.itemFigures {
+  display: inline-flex;
   flex: none;
+  align-items: baseline;
+  gap: 6px;
+  margin: -6px -8px -6px 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: none;
+}
+
+.itemFigures[aria-expanded="true"] {
+  background: var(--raised);
+}
+
+@media (hover: hover) {
+  .itemFigures:hover {
+    background: var(--raised);
+  }
+}
+
+.itemProtein {
   color: var(--protein);
   font-size: 0.85rem;
+}
+
+.itemKcal {
+  font-size: 0.72rem;
+}
+
+.itemNumbers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-control);
+  background: var(--well);
+}
+
+.itemNumbersLegend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.itemNumbersGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.itemNumberField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemNumberField input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--seam-strong);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  text-align: center;
+  background: var(--panel);
+}
+
+.itemNumberField input:focus {
+  border-color: var(--accent-edge);
+  outline: none;
+}
+
+.itemNumberField:first-child input {
+  color: var(--protein);
+}
+
+.itemNumberField span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+.itemNumbersDone {
+  align-self: flex-end;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-control);
+  font-size: 0.85rem;
+  background: var(--panel);
 }
 
 .itemControls {
