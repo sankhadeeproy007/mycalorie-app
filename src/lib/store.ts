@@ -5,7 +5,17 @@ import { userKey } from "./current-user";
 import { dayKey } from "./day";
 import { demoState } from "./demo";
 import { roundMacros, scaleItems, scaleMacros } from "./items";
-import { NO_TARGETS, type AppState, type Macros, type MealItem, type MealLog, type ProductInfo, type SavedMeal, type Targets } from "./types";
+import {
+  NO_TARGETS,
+  type AppState,
+  type Macros,
+  type MealItem,
+  type MealLog,
+  type PhotoModel,
+  type ProductInfo,
+  type SavedMeal,
+  type Targets,
+} from "./types";
 
 /**
  * Browser-local store: the app always reads and writes here, so it opens instantly and works offline.
@@ -255,6 +265,13 @@ export function resetDemoData() {
 export function setTargets(targets: Targets) {
   commit((prev) => ({ ...prev, settings: { ...prev.settings, targets } }));
 }
+
+export function setReadWith(model: PhotoModel) {
+  commit((prev) => ({ ...prev, settings: { ...prev.settings, readWith: model } }));
+}
+
+/** Settings as they stand, for code outside React that needs them at the moment it runs. */
+export const readSettings = () => getSnapshot().settings;
 
 export function setKeepForComparison(keep: boolean) {
   commit((prev) => ({ ...prev, settings: { ...prev.settings, keepForComparison: keep } }));

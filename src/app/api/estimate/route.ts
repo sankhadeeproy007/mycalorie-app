@@ -1,6 +1,7 @@
 import { mockTextEstimate } from "@/lib/analysis-fixtures";
 import { clip, mockingGemini, respondWithAnalysis } from "@/lib/analysis-response";
 import { estimateFromText } from "@/lib/analyze-meal";
+import { CLAUDE_REFUSED, mayUseClaude } from "@/lib/session";
 
 const MAX_DESCRIPTION = 300;
 
@@ -10,6 +11,12 @@ export async function POST(request: Request) {
   const description = clip(body?.text, MAX_DESCRIPTION);
   if (!description) return Response.json({ error: "bad_request" }, { status: 400 });
 
-  if (mockingGemini()) return Response.json(mockTextEstimate(description));
-  return respondWithAnalysis("estimate", () => estimateFromText(description, body?.outside === true));
+  const model = body?.model === "claude" ? "claude" : "gemini";
+  if (model === "claude" && !(await mayUseClaude())) return Response.json(CLAUDE_REFUSED, { status: 403 });
+
+  if (mockingGemini()) {
+    const estimate = mockTextEstimate(description);
+    return Response.json(model === "claude" ? { ...estimate, name: `${estimate.name} (Claude)`, costUsd: 0.004 } : estimate);
+  }
+  return respondWithAnalysis(`estimate (${model})`, () => estimateFromText(description, body?.outside === true, model));
 }

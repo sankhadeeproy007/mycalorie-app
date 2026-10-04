@@ -3,8 +3,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { AnalysisError } from "../analysis-error";
 
 /**
- * The second opinion on a photo: Claude Sonnet 5.5, asked only when the owner taps "Try Claude".
- * Same prompt and schema as Gemini, so both answers read the same way.
+ * Claude Sonnet 5.5: the owner's default reader for photos and descriptions, with Gemini as the
+ * free fallback and second opinion. Same prompts and schemas as Gemini, so both answers read the same way.
  */
 
 export const CLAUDE_MODEL = "claude-sonnet-5-5";
@@ -24,18 +24,21 @@ function claude(): Anthropic {
 
 export type ClaudeAnswer<T> = { data: T; costUsd: number };
 
+type ClaudeImage = { base64: string; mimeType: "image/jpeg" | "image/png" | "image/webp" };
+
+/** One structured answer: about a photo when `image` is given, otherwise about the instructions alone. */
 export async function callClaude<T>(
-  image: { base64: string; mimeType: "image/jpeg" | "image/png" | "image/webp" },
-  instructions: string,
+  request: { image?: ClaudeImage; instructions: string },
   schema: Record<string, unknown>,
 ): Promise<ClaudeAnswer<T>> {
+  const { image, instructions } = request;
   const effort = EFFORTS.has(process.env.CLAUDE_EFFORT ?? "") ? process.env.CLAUDE_EFFORT! : DEFAULT_EFFORT;
   let response: Anthropic.Beta.BetaMessage;
   try {
     response = await claude().beta.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: 8000,
-      // If a safety check declines the photo, the API retries on a fallback model it picks by category.
+      // If a safety check declines the request, the API retries on a fallback model it picks by category.
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       output_config: { effort: effort as "low" | "medium" | "high", format: { type: "json_schema", schema } },
@@ -43,7 +46,9 @@ export async function callClaude<T>(
         {
           role: "user",
           content: [
-            { type: "image", source: { type: "base64", media_type: image.mimeType, data: image.base64 } },
+            ...(image
+              ? [{ type: "image" as const, source: { type: "base64" as const, media_type: image.mimeType, data: image.base64 } }]
+              : []),
             { type: "text", text: instructions },
           ],
         },
@@ -52,6 +57,10 @@ export async function callClaude<T>(
   } catch (error) {
     if (error instanceof Anthropic.AuthenticationError) throw new AnalysisError("not_configured", "Claude rejected the key", "claude key rejected");
     if (error instanceof Anthropic.RateLimitError) throw new AnalysisError("quota", "Claude rate limit", "claude rate limit");
+    // Anthropic answers 400 with this when the key's organization has no API credit left.
+    if (error instanceof Anthropic.BadRequestError && /credit balance/i.test(error.message)) {
+      throw new AnalysisError("quota", "Anthropic API credit is used up", "claude: API credit used up");
+    }
     if (error instanceof Anthropic.APIError) {
       throw new AnalysisError("upstream", `Claude ${error.status}: ${error.message}`, `claude ${error.status}: ${error.message.slice(0, 120)}`);
     }

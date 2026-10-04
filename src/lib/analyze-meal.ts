@@ -33,7 +33,7 @@ export async function analyzePhoto(
   model: PhotoModel = "gemini",
 ): Promise<Analysis & { costUsd?: number }> {
   if (model === "claude") {
-    const { data, costUsd } = await callClaude<RawPhoto>(image, photoInstructions(context), PHOTO_SCHEMA);
+    const { data, costUsd } = await callClaude<RawPhoto>({ image, instructions: photoInstructions(context) }, PHOTO_SCHEMA);
     return { ...interpretPhoto(data, context), costUsd };
   }
   const { base64, mimeType } = image;
@@ -45,7 +45,15 @@ export async function analyzePhoto(
   return interpretPhoto(data, context);
 }
 
-export async function estimateFromText(description: string, outside: boolean): Promise<{ name: string; items: EstimatedItem[] }> {
+export async function estimateFromText(
+  description: string,
+  outside: boolean,
+  model: PhotoModel = "gemini",
+): Promise<{ name: string; items: EstimatedItem[]; costUsd?: number }> {
+  if (model === "claude") {
+    const { data, costUsd } = await callClaude<RawText>({ instructions: textInstructions(description, outside) }, TEXT_SCHEMA);
+    return { ...interpretText(data), costUsd };
+  }
   const { data } = await callGemini<RawText>([{ text: textInstructions(description, outside) }], TEXT_SCHEMA, gemini());
   return interpretText(data);
 }

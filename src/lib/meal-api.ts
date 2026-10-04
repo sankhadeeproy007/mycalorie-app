@@ -2,6 +2,8 @@
 
 import { totalMacros, formatQuantity, formatUnit } from "./items";
 import type { PreparedImage } from "./image";
+import { isOwner } from "./current-user";
+import { readSettings } from "./store";
 import type { Analysis, EstimatedItem, PhotoModel, SavedMeal } from "./types";
 
 export type AnalyzeFailure = "not_configured" | "quota" | "unreadable" | "offline" | "failed";
@@ -58,6 +60,22 @@ export function requestAnalysis(image: PreparedImage, { hint, outside, regulars 
   });
 }
 
-export function requestEstimate(text: string, outside: boolean) {
-  return post<{ name: string; items: EstimatedItem[] }>("/api/estimate", { text, outside });
+/** Which AI reads a meal first: the owner's choice (Claude unless switched off), Gemini for everyone else. */
+export function preferredModel(): PhotoModel {
+  return isOwner() && (readSettings().readWith ?? "claude") === "claude" ? "claude" : "gemini";
+}
+
+export const otherModel = (model: PhotoModel): PhotoModel => (model === "claude" ? "gemini" : "claude");
+
+type Estimate = { name: string; items: EstimatedItem[]; costUsd?: number };
+
+function requestEstimate(text: string, outside: boolean, model: PhotoModel) {
+  return post<Estimate>("/api/estimate", { text, outside, model });
+}
+
+/** A description, read by the preferred AI; if Claude can't answer (no credit, say), free Gemini does. */
+export async function estimateDescription(text: string, outside: boolean): Promise<ApiResult<Estimate>> {
+  const model = preferredModel();
+  const result = await requestEstimate(text, outside, model);
+  return result.ok || model === "gemini" ? result : requestEstimate(text, outside, "gemini");
 }

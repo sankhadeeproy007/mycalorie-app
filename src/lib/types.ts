@@ -73,6 +73,8 @@ export type Settings = {
   targets: Targets;
   /** Keep each analysed photo with its estimate and the logged result, for comparing AI models. */
   keepForComparison?: boolean;
+  /** Which AI reads meals first; the owner's default is Claude. Others always use Gemini. */
+  readWith?: PhotoModel;
 };
 
 export type AppState = {

@@ -2,7 +2,7 @@
 
 import { useState, type KeyboardEvent } from "react";
 import { totalMacros } from "@/lib/items";
-import { requestEstimate, type AnalyzeFailure } from "@/lib/meal-api";
+import { estimateDescription, type AnalyzeFailure } from "@/lib/meal-api";
 import type { EstimatedItem, SavedMeal } from "@/lib/types";
 import { FAILURE_COPY } from "./failure-copy";
 import styles from "./MealSheet.module.css";
@@ -26,7 +26,7 @@ export function AddItemPanel({ regulars, outside, onAddRegular, onAddEstimated }
     if (!description || busy) return;
     setBusy(true);
     setFailure(null);
-    const result = await requestEstimate(description, outside);
+    const result = await estimateDescription(description, outside);
     setBusy(false);
     if (!result.ok) {
       setFailure({ reason: result.reason, detail: result.detail });

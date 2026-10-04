@@ -9,6 +9,9 @@ import { SwitchRow } from "./SwitchRow";
 import styles from "./ComparisonPanel.module.css";
 
 type ComparisonPanelProps = {
+  /** Claude reads meals first (Gemini otherwise); either way the other is one tap away. */
+  claudeFirst: boolean;
+  onClaudeFirst: (on: boolean) => void;
   enabled: boolean;
   onToggle: (on: boolean) => void;
   /** Bumped after each kept photo so the count refreshes. */
@@ -19,7 +22,7 @@ type Status = { kind: "idle" } | { kind: "working"; label: string } | { kind: "m
 
 const fileSize = (bytes: number) => (bytes < 1_000_000 ? `${Math.max(1, Math.round(bytes / 1000))} KB` : `${(bytes / 1_000_000).toFixed(1)} MB`);
 
-export function ComparisonPanel({ enabled, onToggle, revision }: ComparisonPanelProps) {
+export function ComparisonPanel({ claudeFirst, onClaudeFirst, enabled, onToggle, revision }: ComparisonPanelProps) {
   const [stats, setStats] = useState<{ count: number; bytes: number } | null>(null);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [confirmingClear, setConfirmingClear] = useState(false);
@@ -65,13 +68,25 @@ export function ComparisonPanel({ enabled, onToggle, revision }: ComparisonPanel
   const count = stats?.count ?? 0;
 
   return (
-    <Panel title="model comparison" meta={count > 0 ? `${count} kept` : undefined} headingId="comparison-heading">
-      <SwitchRow
-        label="Keep meal photos for comparison"
-        hint="Saves each photo you log with Gemini’s first estimate and what you logged after fixing it. Stays on this phone."
-        on={enabled}
-        onChange={toggle}
-      />
+    <Panel title="ai models" meta={count > 0 ? `${count} kept` : undefined} headingId="comparison-heading">
+      <div className={styles.switches}>
+        <SwitchRow
+          label="Read meals with Claude Sonnet"
+          hint={
+            claudeFirst
+              ? "About 2¢ a photo from your Anthropic credit. If Claude can’t answer, free Gemini does. Regulars never use either."
+              : "Off: free Gemini reads meals first. You can still ask Claude about any photo from the meal sheet."
+          }
+          on={claudeFirst}
+          onChange={onClaudeFirst}
+        />
+        <SwitchRow
+          label="Keep meal photos for comparison"
+          hint="Saves each photo you log with each AI’s first answer and what you logged after fixing it. Stays on this phone."
+          on={enabled}
+          onChange={toggle}
+        />
+      </div>
 
       {count > 0 && (
         <div className={styles.actions}>

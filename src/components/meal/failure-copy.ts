@@ -10,7 +10,7 @@ export const FAILURE_COPY: Record<AnalyzeFailure, string> = {
 
 export const CLAUDE_FAILURE_COPY: Record<AnalyzeFailure, string> = {
   not_configured: "Claude isn’t set up yet: it needs ANTHROPIC_API_KEY on Vercel.",
-  quota: "Claude is rate-limited for the moment. Try again in a minute.",
+  quota: "Claude can’t answer right now: its API credit may be used up (platform.claude.com → Billing), or it’s busy. Gemini still works.",
   unreadable: "Claude couldn’t find food in that photo.",
   offline: "You’re offline, so Claude can’t be reached.",
   failed: "Something went wrong asking Claude. Try again.",

@@ -1,3 +1,9 @@
+.switches {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .actions {
   display: flex;
   align-items: center;

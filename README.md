@@ -44,9 +44,9 @@ Without an export:
 
 Options: `--from <export.json>` uses photos kept by the app, `--models gemini,sonnet` runs a subset, `--limit 10` caps the number of photos, `--effort low|medium|high` sets Claude's effort (default `low`, which keeps cost down), and `--yes` skips the confirmation. The `compare/` folder is git-ignored, so your photos stay on your machine.
 
-## Try Claude
+## Claude Sonnet and Gemini
 
-After a photo is read by Gemini, a **Gemini | Claude** switch lets you ask Claude Sonnet 5.5 about the same photo (about 2¢ each) and flip between the two answers before logging. Set `ANTHROPIC_API_KEY` on Vercel (Production) to turn it on; `CLAUDE_EFFORT` (`low` by default) is optional.
+For the owner, Claude Sonnet 5.5 reads meal photos and descriptions first (about 2¢ a photo), and free Gemini takes over automatically if Claude can't answer. A **Claude | Gemini** switch on each photo asks the other model and flips between the two answers. "Read meals with Claude Sonnet" in the AI models panel puts Gemini first instead. Set `ANTHROPIC_API_KEY` on Vercel (Production) for Claude; `CLAUDE_EFFORT` (`low` by default) is optional. Other people always use Gemini. Logging a regular never calls either model.
 
 ## Access code
 

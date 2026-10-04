@@ -42,6 +42,7 @@ import {
   saveMeal,
   setDemoMode,
   setKeepForComparison,
+  setReadWith,
   setTargets,
   updateLog,
   updateSavedMeal,
@@ -304,6 +305,8 @@ export function HomeScreen({ userId }: { userId: string }) {
             <EatenToday logs={view.todaysLogs} onRemove={removeFromToday} onSaveToRegulars={addToRegulars} onEdit={editLog} />
             {owner && (
               <ComparisonPanel
+                claudeFirst={(state?.settings.readWith ?? "claude") === "claude"}
+                onClaudeFirst={(on) => setReadWith(on ? "claude" : "gemini")}
                 enabled={Boolean(state?.settings.keepForComparison)}
                 onToggle={setKeepForComparison}
                 revision={comparisonRevision}
