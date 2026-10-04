@@ -9,7 +9,8 @@ export type GeminiUsage = { inputTokens: number; outputTokens: number };
 type GeminiPart = { text: string } | { inline_data: { mime_type: string; data: string } };
 
 type GeminiResponse = {
-  candidates?: { content?: { parts?: { text?: string }[] } }[];
+  candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] }; finishReason?: string }[];
+  promptFeedback?: { blockReason?: string };
   usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
 };
 
@@ -32,15 +33,46 @@ export async function callGemini<T>(
 
   if (response.status === 429) throw new AnalysisError("quota", "The free Gemini quota is used up for now");
   if (!response.ok) {
-    throw new AnalysisError("upstream", `Gemini returned ${response.status}: ${(await response.text()).slice(0, 300)}`);
+    const raw = await response.text();
+    const reason = (() => {
+      try {
+        return (JSON.parse(raw) as { error?: { message?: string } }).error?.message ?? "";
+      } catch {
+        return "";
+      }
+    })();
+    throw new AnalysisError(
+      "upstream",
+      `Gemini returned ${response.status}: ${raw.slice(0, 300)}`,
+      `gemini ${response.status}${reason ? `: ${reason.slice(0, 120)}` : ""}`,
+    );
   }
 
   const body = (await response.json()) as GeminiResponse;
-  const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new AnalysisError("upstream", "Gemini returned no answer");
+  const candidate = body.candidates?.[0];
+  // Newer models can split an answer across parts and add thought parts; join only the answer text.
+  const text = (candidate?.content?.parts ?? [])
+    .filter((part) => part.text && !part.thought)
+    .map((part) => part.text)
+    .join("");
+  if (!text) {
+    const why = body.promptFeedback?.blockReason ?? candidate?.finishReason ?? "unknown";
+    throw new AnalysisError("upstream", `Gemini returned no answer (${why})`, `no answer (${why})`);
+  }
+
+  let data: T;
+  try {
+    data = JSON.parse(text) as T;
+  } catch {
+    throw new AnalysisError(
+      "upstream",
+      `Gemini answer wasn't valid JSON (finish: ${candidate?.finishReason}): ${text.slice(0, 200)}`,
+      `unreadable answer (${candidate?.finishReason ?? "unknown"})`,
+    );
+  }
   const meta = body.usageMetadata ?? {};
   return {
-    data: JSON.parse(text) as T,
+    data,
     usage: {
       inputTokens: meta.promptTokenCount ?? 0,
       outputTokens: (meta.candidatesTokenCount ?? 0) + (meta.thoughtsTokenCount ?? 0),

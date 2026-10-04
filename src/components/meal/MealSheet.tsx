@@ -74,7 +74,7 @@ type Review = {
 };
 
 type Stage =
-  | { name: "compose"; failure?: AnalyzeFailure }
+  | { name: "compose"; failure?: AnalyzeFailure; detail?: string }
   | { name: "reading" }
   | { name: "review"; review: Review }
   | { name: "label"; reading: LabelReading };
@@ -121,7 +121,7 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
     if (photo) {
       setStage({ name: "reading" });
       const result = await requestAnalysis(photo.image, { hint: hint.trim(), outside, regulars });
-      if (!result.ok) return setStage({ name: "compose", failure: result.reason });
+      if (!result.ok) return setStage({ name: "compose", failure: result.reason, detail: result.detail });
       const analysis = result.value;
       setEstimate(analysis);
       if (analysis.kind === "label") return setStage({ name: "label", reading: analysis.label });
@@ -133,7 +133,7 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
     if (!description) return;
     setStage({ name: "reading" });
     const result = await requestEstimate(description, outside);
-    if (!result.ok) return setStage({ name: "compose", failure: result.reason });
+    if (!result.ok) return setStage({ name: "compose", failure: result.reason, detail: result.detail });
     startReview(result.value.name, result.value.items.map(fromEstimate));
   };
 
@@ -175,6 +175,7 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
           {stage.failure && (
             <p className={styles.failure} role="alert">
               {FAILURE_COPY[stage.failure]}
+              {stage.detail && <span className={`mono ${styles.failureDetail}`}>details: {stage.detail}</span>}
             </p>
           )}
 

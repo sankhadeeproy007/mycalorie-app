@@ -153,10 +153,10 @@ export type RawPhoto = {
   matchedRegularId?: string | null;
   label?: {
     productName?: string | null;
-    servingLabel: string;
+    servingLabel?: string | null;
     servingSize: number;
     servingUnit: "g" | "ml";
-    perServing: Macros;
+    perServing?: Macros | null;
     per100?: Macros | null;
   } | null;
 };
@@ -165,6 +165,12 @@ export type RawText = { name: string; items: RawItem[] };
 
 const positive = (value: number, fallback: number) => (Number.isFinite(value) && value > 0 ? value : fallback);
 const nonNegative = (value: number) => (Number.isFinite(value) ? Math.max(0, value) : 0);
+const scale = (macros: Macros, factor: number): Macros => ({
+  protein: macros.protein * factor,
+  kcal: macros.kcal * factor,
+  carbs: macros.carbs * factor,
+  fat: macros.fat * factor,
+});
 const cleanMacros = (macros: Macros): Macros => ({
   protein: nonNegative(macros.protein),
   kcal: nonNegative(macros.kcal),
@@ -191,15 +197,24 @@ function normaliseItem(raw: RawItem): EstimatedItem {
 export function interpretPhoto(raw: RawPhoto, context: MealContext): Analysis {
   if (raw.kind === "label" && raw.label) {
     const { label } = raw;
+    const servingSize = positive(label.servingSize, 0);
+    const per100 = label.per100 ? cleanMacros(label.per100) : undefined;
+    // Some labels only print per-100 g values; work the serving out from them when the serving size is known.
+    const perServing = label.perServing
+      ? cleanMacros(label.perServing)
+      : per100 && servingSize
+        ? scale(per100, servingSize / 100)
+        : null;
+    if (!perServing) throw new AnalysisError("unreadable", "Label had no usable values", "label without values");
     return {
       kind: "label",
       label: {
         productName: label.productName?.trim() || null,
-        servingLabel: label.servingLabel.trim().toLowerCase() || "serving",
-        servingSize: positive(label.servingSize, 1),
+        servingLabel: label.servingLabel?.trim().toLowerCase() || "serving",
+        servingSize: servingSize || 100,
         servingUnit: label.servingUnit === "ml" ? "ml" : "g",
-        perServing: cleanMacros(label.perServing),
-        per100: label.per100 ? cleanMacros(label.per100) : undefined,
+        perServing,
+        per100,
       },
     };
   }

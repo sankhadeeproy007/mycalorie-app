@@ -6,7 +6,8 @@ import type { Analysis, EstimatedItem, SavedMeal } from "./types";
 
 export type AnalyzeFailure = "not_configured" | "quota" | "unreadable" | "offline" | "failed";
 
-export type ApiResult<T> = { ok: true; value: T } | { ok: false; reason: AnalyzeFailure };
+/** `detail` is the server's short technical reason, shown small under the error to help diagnose it. */
+export type ApiResult<T> = { ok: true; value: T } | { ok: false; reason: AnalyzeFailure; detail?: string };
 
 const KNOWN_FAILURES = new Set<AnalyzeFailure>(["not_configured", "quota", "unreadable"]);
 
@@ -23,8 +24,12 @@ async function post<T>(url: string, body: unknown): Promise<ApiResult<T>> {
   }
 
   if (response.ok) return { ok: true, value: (await response.json()) as T };
-  const { error } = (await response.json().catch(() => ({}))) as { error?: string };
-  return { ok: false, reason: KNOWN_FAILURES.has(error as AnalyzeFailure) ? (error as AnalyzeFailure) : "failed" };
+  const { error, detail } = (await response.json().catch(() => ({}))) as { error?: string; detail?: string };
+  return {
+    ok: false,
+    reason: KNOWN_FAILURES.has(error as AnalyzeFailure) ? (error as AnalyzeFailure) : "failed",
+    detail: detail ?? (error ? undefined : `HTTP ${response.status}`),
+  };
 }
 
 /** A one-line description of each regular, so the AI can recognise it in a photo. */

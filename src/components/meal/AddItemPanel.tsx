@@ -18,7 +18,7 @@ type AddItemPanelProps = {
 export function AddItemPanel({ regulars, outside, onAddRegular, onAddEstimated }: AddItemPanelProps) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [failure, setFailure] = useState<AnalyzeFailure | null>(null);
+  const [failure, setFailure] = useState<{ reason: AnalyzeFailure; detail?: string } | null>(null);
 
   /** Not a form: this panel sits inside the review form, and forms can't nest. */
   const describe = async () => {
@@ -29,7 +29,7 @@ export function AddItemPanel({ regulars, outside, onAddRegular, onAddEstimated }
     const result = await requestEstimate(description, outside);
     setBusy(false);
     if (!result.ok) {
-      setFailure(result.reason);
+      setFailure({ reason: result.reason, detail: result.detail });
       return;
     }
     onAddEstimated(result.value.items);
@@ -61,7 +61,12 @@ export function AddItemPanel({ regulars, outside, onAddRegular, onAddEstimated }
           {busy ? "Adding…" : "Add"}
         </button>
       </div>
-      {failure && <p className={styles.inlineFailure}>{FAILURE_COPY[failure]}</p>}
+      {failure && (
+        <p className={styles.inlineFailure}>
+          {FAILURE_COPY[failure.reason]}
+          {failure.detail && <span className={`mono ${styles.failureDetail}`}>details: {failure.detail}</span>}
+        </p>
+      )}
 
       {regulars.length > 0 && (
         <>

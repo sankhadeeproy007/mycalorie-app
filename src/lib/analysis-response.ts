@@ -15,10 +15,12 @@ export async function respondWithAnalysis(label: string, run: () => Promise<unkn
   } catch (error) {
     if (error instanceof AnalysisError) {
       console.error(`${label}: ${error.code}: ${error.message}`);
-      return Response.json({ error: error.code }, { status: STATUS_BY_CODE[error.code] });
+      return Response.json({ error: error.code, detail: error.detail }, { status: STATUS_BY_CODE[error.code] });
     }
+    // Usually an answer in an unexpected shape (a field missing); say so instead of a bare failure.
     console.error(`${label}: unexpected failure`, error);
-    return Response.json({ error: "upstream" }, { status: 502 });
+    const detail = error instanceof Error ? `unexpected answer: ${error.message.slice(0, 100)}` : "unexpected failure";
+    return Response.json({ error: "upstream", detail }, { status: 502 });
   }
 }
 
