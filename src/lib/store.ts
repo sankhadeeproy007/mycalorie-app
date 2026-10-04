@@ -14,6 +14,7 @@ import {
   type PhotoModel,
   type ProductInfo,
   type SavedMeal,
+  type Settings,
   type Targets,
 } from "./types";
 
@@ -262,17 +263,22 @@ export function resetDemoData() {
   reload();
 }
 
+/** Every settings change is stamped, so syncing devices agree on the newest. */
+function changeSettings(changes: Partial<Settings>) {
+  commit((prev) => ({ ...prev, settings: { ...prev.settings, ...changes, changedAt: Date.now() } }));
+}
+
 export function setTargets(targets: Targets) {
-  commit((prev) => ({ ...prev, settings: { ...prev.settings, targets } }));
+  changeSettings({ targets });
 }
 
 export function setReadWith(model: PhotoModel) {
-  commit((prev) => ({ ...prev, settings: { ...prev.settings, readWith: model } }));
+  changeSettings({ readWith: model });
 }
 
 /** Settings as they stand, for code outside React that needs them at the moment it runs. */
 export const readSettings = () => getSnapshot().settings;
 
 export function setKeepForComparison(keep: boolean) {
-  commit((prev) => ({ ...prev, settings: { ...prev.settings, keepForComparison: keep } }));
+  changeSettings({ keepForComparison: keep });
 }

@@ -40,3 +40,63 @@
 .hide:hover {
   color: var(--text);
 }
+
+.export {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--seam);
+}
+
+.exportTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.exportHint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.exportButtons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.exportButton {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-control);
+  font-size: 0.88rem;
+  font-weight: 500;
+  background: var(--raised);
+}
+
+.exportButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (hover: hover) {
+  .exportButton:hover:not(:disabled) {
+    border-color: var(--muted);
+  }
+}
+
+.exportNote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}

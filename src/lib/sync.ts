@@ -5,7 +5,7 @@ import { isAppState } from "./app-state-check";
 import { userKey } from "./current-user";
 import { dayKey } from "./day";
 import { onRealDataChange, readRealState, writeRealState } from "./store";
-import type { AppState } from "./types";
+import type { AppState, Settings } from "./types";
 
 /**
  * Mirrors the real data to the cloud copy behind /api/data. The phone stays the working copy: changes
@@ -81,7 +81,20 @@ export function useSyncStatus(): SyncStatus | null {
   );
 }
 
-/** Union by id; on the same id the phone's version wins. Settings are the phone's. */
+const hasTargets = (settings: Settings) => Object.values(settings.targets).some((value) => value !== null);
+
+/**
+ * The most recently changed settings win. Settings saved before changes were stamped carry no time;
+ * between two of those, a set of targets beats none, so a fresh copy can't blank them.
+ */
+function newerSettings(local: Settings, cloud: Settings): Settings {
+  const localAt = local.changedAt ?? 0;
+  const cloudAt = cloud.changedAt ?? 0;
+  if (localAt !== cloudAt) return localAt > cloudAt ? local : cloud;
+  return hasTargets(local) || !hasTargets(cloud) ? local : cloud;
+}
+
+/** Union by id; on the same id the phone's version wins. Settings: the newest (see `newerSettings`). */
 function merge(local: AppState, cloud: AppState): AppState {
   const union = <T extends { id: string }>(mine: T[], theirs: T[]) => {
     const byId = new Map(theirs.map((entry) => [entry.id, entry]));
@@ -90,6 +103,7 @@ function merge(local: AppState, cloud: AppState): AppState {
   };
   return {
     ...local,
+    settings: newerSettings(local.settings, cloud.settings),
     saved: union(local.saved, cloud.saved).sort((a, b) => a.createdAt - b.createdAt),
     logs: union(local.logs, cloud.logs).sort((a, b) => a.eatenAt - b.eatenAt),
   };

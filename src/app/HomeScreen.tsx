@@ -48,7 +48,7 @@ import {
   updateSavedMeal,
   useAppState,
 } from "@/lib/store";
-import { ZERO_MACROS, type MealLog, type SavedMeal } from "@/lib/types";
+import { NO_TARGETS, ZERO_MACROS, type MealLog, type SavedMeal } from "@/lib/types";
 import styles from "./HomeScreen.module.css";
 
 /** The console's state string: lit once today's target is hit, open until then, never broken mid-day. */
@@ -315,6 +315,8 @@ export function HomeScreen({ userId }: { userId: string }) {
             <BackupPanel today={today} demo={isDemo()} hasData={hasData} onNotice={notify} />
             {(developerShown || isDemo()) && (
               <DeveloperPanel
+                logs={state?.logs ?? []}
+                targets={state?.settings.targets ?? NO_TARGETS}
                 demo={isDemo()}
                 onDemoChange={setDemoMode}
                 onResetDemo={resetDemoData}
