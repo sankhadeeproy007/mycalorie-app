@@ -8,6 +8,7 @@
 }
 
 .header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -15,6 +16,73 @@
   min-height: 38px;
   padding: 0 12px;
   border-bottom: 1px solid var(--seam);
+  transition: border-color 220ms var(--ease-out);
+}
+
+.panel[data-collapsed] .header {
+  border-bottom-color: transparent;
+}
+
+/* The whole header is the toggle's touch target; the meta (a count) sits above it visually only. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-variant: inherit;
+  letter-spacing: inherit;
+  background: none;
+}
+
+.toggle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+}
+
+@media (hover: hover) {
+  .toggle:hover {
+    color: var(--text);
+  }
+}
+
+.toggle:focus-visible {
+  outline: none;
+}
+
+.toggle:focus-visible::after {
+  outline: 2px solid var(--accent-edge);
+  outline-offset: -2px;
+}
+
+.chevron {
+  transition: rotate 220ms var(--ease-out);
+}
+
+.panel[data-collapsed] .chevron {
+  rotate: -90deg;
+}
+
+/* Folding animates along one axis: the row track goes from its content height to zero. */
+.content {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 220ms var(--ease-out);
+}
+
+.panel[data-collapsed] .content {
+  grid-template-rows: 0fr;
+}
+
+.contentInner {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .title {

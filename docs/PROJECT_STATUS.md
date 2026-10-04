@@ -52,7 +52,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 - **Streak panel:**
   - A 12-week contribution graph in a protein-blue ramp, with a legend (none / under / hit).
   - Tapping anywhere on it opens the nearest day in the **day sheet**: read-only totals against targets, the score, and meals with their items, with ‹ › to step between days.
-- **Regulars:** photo tiles. A tap logs 1×. The "1×" tab opens the portion picker (½, 1, 1½, 2) plus "adjust before logging".
+- **Regulars:** photo tiles. A tap logs 1×. The "1×" tab opens the portion picker (½, 1, 1½, 2) plus "adjust before logging". Tapping the panel header folds it to just the header and count; the choice is remembered on the phone.
 - **Today:** the meal list, with save-to-regulars and remove (with undo).
 - **Model comparison panel:** the "Keep meal photos for comparison" switch, a count, Export and Clear.
 - **Developer panel (hidden):** a "Demo data" switch, "Reset demo data", and "hide".
@@ -103,7 +103,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 
 ## Data model (`src/lib/types.ts`)
 
-- `AppState = { settings: { targets, keepForComparison? }, saved: SavedMeal[], logs: MealLog[] }`, stored in localStorage under `mycalorie:v1`. Demo data uses `mycalorie:demo:v5`: 12 weeks of 3–4 real meals per day with items, built from Indian meal templates in `src/lib/demo.ts`, with an 18-day streak and a best run of 26. It uses the demo switch `mycalorie:demo-mode`, and the developer flag `mycalorie:developer`.
+- `AppState = { settings: { targets, keepForComparison? }, saved: SavedMeal[], logs: MealLog[] }`, stored in localStorage under `mycalorie:v1`. Demo data uses `mycalorie:demo:v5`: 12 weeks of 3–4 real meals per day with items, built from Indian meal templates in `src/lib/demo.ts`, with an 18-day streak and a best run of 26. It uses the demo switch `mycalorie:demo-mode`, and the developer flag `mycalorie:developer`. Whether the regulars panel is folded lives in `mycalorie:regulars-collapsed`.
 - `MealItem`: `quantity`, `unit`, `baseQuantity`, `baseMacros`, plus optional `gramsPerUnit`, `weightUnit`, `uncertain`, `cookingFat` and `sourceId`. An item's macros scale linearly from its base (`src/lib/items.ts`).
 - `SavedMeal` (a regular): `macros` for 1×, plus optional `items` and `product`.
 - `MealLog`: `macros` as eaten, `portion`, `day` (the local date), and optional `items` and `savedMealId`.

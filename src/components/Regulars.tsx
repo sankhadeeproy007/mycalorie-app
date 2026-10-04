@@ -14,11 +14,40 @@ type RegularsProps = {
 };
 
 /** Saved meals as photo tiles: one tap logs a 1× portion, the corner chip picks another. */
+const COLLAPSED_KEY = "mycalorie:regulars-collapsed";
+
+function readCollapsed(): boolean {
+  try {
+    return typeof window !== "undefined" && window.localStorage.getItem(COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function Regulars({ meals, onLog, onAdjust }: RegularsProps) {
   const [portionFor, setPortionFor] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+
+  const toggle = () => {
+    setPortionFor(null);
+    setCollapsed((was) => {
+      try {
+        if (was) window.localStorage.removeItem(COLLAPSED_KEY);
+        else window.localStorage.setItem(COLLAPSED_KEY, "1");
+      } catch {
+        // Not remembered without storage; the panel still folds.
+      }
+      return !was;
+    });
+  };
 
   return (
-    <Panel title="regulars" meta={meals.length > 0 ? meals.length : undefined} headingId="regulars-heading">
+    <Panel
+      title="regulars"
+      meta={meals.length > 0 ? meals.length : undefined}
+      headingId="regulars-heading"
+      collapsible={{ collapsed, onToggle: toggle }}
+    >
       {meals.length === 0 ? (
         <p className={styles.empty}>
           Meals you save show up here as one-tap tiles. Tick “Save to regulars” when you log a meal.
