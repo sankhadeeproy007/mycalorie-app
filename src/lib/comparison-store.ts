@@ -18,6 +18,10 @@ export type ComparisonSample = {
   outside: boolean;
   /** Gemini's answer before any correction; null when it failed and the meal was typed in. */
   estimate: Analysis | null;
+  /** Claude's answer, when "Try Claude" was tapped for this photo. */
+  claudeEstimate?: Analysis | null;
+  /** Which answer the logged meal started from. */
+  chosen?: "gemini" | "claude";
   logged: { name: string; macros: Macros; items?: MealItem[] };
 };
 

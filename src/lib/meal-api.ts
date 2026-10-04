@@ -2,7 +2,7 @@
 
 import { totalMacros, formatQuantity, formatUnit } from "./items";
 import type { PreparedImage } from "./image";
-import type { Analysis, EstimatedItem, SavedMeal } from "./types";
+import type { Analysis, EstimatedItem, PhotoModel, SavedMeal } from "./types";
 
 export type AnalyzeFailure = "not_configured" | "quota" | "unreadable" | "offline" | "failed";
 
@@ -41,8 +41,10 @@ function summarise(regular: SavedMeal): string {
 
 export type PhotoContext = { hint: string; outside: boolean; regulars: SavedMeal[] };
 
-export function requestAnalysis(image: PreparedImage, { hint, outside, regulars }: PhotoContext) {
-  return post<Analysis>("/api/analyze", {
+/** Claude's answers come back with what they cost. */
+export function requestAnalysis(image: PreparedImage, { hint, outside, regulars }: PhotoContext, model: PhotoModel = "gemini") {
+  return post<Analysis & { costUsd?: number }>("/api/analyze", {
+    model,
     image: image.base64,
     mimeType: image.mimeType,
     hint,

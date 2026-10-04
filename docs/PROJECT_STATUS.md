@@ -39,7 +39,8 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 | `GEMINI_MODEL` | Optional model override. |
 | `ACCESS_CODE` | 4–8 digits for the unlock screen. Changing it signs every device out. |
 | `SESSION_SECRET` | Random string that signs the session cookie (`openssl rand -hex 32`). |
-| `ANTHROPIC_API_KEY` | Local `.env.local` only, for `npm run compare`. Not used by the app. |
+| `ANTHROPIC_API_KEY` | Claude for "Try Claude" in the app (Production on Vercel), and for `npm run compare` locally. Without it the button says Claude isn't set up. |
+| `CLAUDE_EFFORT` | Optional: `low` (default), `medium` or `high` for "Try Claude". |
 | `REDIS_URL` | Cloud sync over a direct Redis connection; set by the Redis integration connected on Vercel (this is what production uses). |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Alternative: Upstash's REST API (`UPSTASH_REDIS_REST_URL` / `_TOKEN` also work); wins over `REDIS_URL` when set. With neither, sync is off. |
 | `MOCK_GEMINI=1` | Development only: canned AI answers so the screens work without a key. |
@@ -56,6 +57,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
   - A 12-week contribution graph in a protein-blue ramp, with a legend (none / under / hit).
   - Tapping anywhere on it opens the nearest day in the **day sheet**: read-only totals against targets, the score, and meals with their items, with ‹ › to step between days. Tapping a meal opens it in **Edit meal**; closing that sheet returns to the day.
 - **Regulars:** photo tiles. A tap logs 1×. The "1×" tab opens the portion picker (½, 1, 1½, 2) plus a pencil (**edit regular**) and "adjust before logging". Edit regular reopens it in the meal sheet: rename, change items, Save changes, or Remove from regulars (with undo, which also relinks past logs). A product is edited as its per-serving label values; `per100` is rescaled to match. Tapping the panel header folds it to just the header and count; the choice is remembered on the phone.
+- **Try Claude:** after a photo is read, a Gemini | Claude switch sits under the sheet header. "Try Claude ~2¢" sends the same photo and prompt to Claude Sonnet 5.5 (`src/lib/providers/claude.ts`, official SDK, effort `low`, structured output, server-side refusal fallback `"default"`); its answer opens as a second review with its own edits, and the switch flips between them. The cost of each Claude answer shows on the switch. If Gemini fails, the same switch offers Claude instead. A kept comparison sample records Claude's answer (`claudeEstimate`) and which answer was logged (`chosen`). `MOCK_GEMINI=1` mocks both.
 - **Item numbers:** in every meal sheet, each item shows protein · kcal with a pencil; tapping opens four fields to correct its numbers for the amount shown. That sets the item's base to the corrected values, so stepping the quantity scales from them (`ItemRow.tsx`).
 - **Today:** the meal list, with save-to-regulars and remove (with undo). Tapping a meal opens **Edit meal**: the meal sheet with its items as eaten (or its totals, for a meal typed as numbers), Save changes, and Delete meal (with undo). Time, day and portion stay as logged. Saving also updates that meal's kept comparison sample (`updateSampleForLog`), so the comparison scores against the corrected numbers.
 - **Model comparison panel:** the "Keep meal photos for comparison" switch, a count, Export and Clear.

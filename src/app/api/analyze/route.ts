@@ -1,4 +1,4 @@
-import { mockPhotoAnalysis } from "@/lib/analysis-fixtures";
+import { mockClaudeAnalysis, mockPhotoAnalysis } from "@/lib/analysis-fixtures";
 import { clip, mockingGemini, respondWithAnalysis } from "@/lib/analysis-response";
 import { analyzePhoto, type RegularSummary } from "@/lib/analyze-meal";
 
@@ -30,6 +30,11 @@ export async function POST(request: Request) {
   }
 
   const context = { hint: clip(body?.hint, MAX_HINT), outside: body?.outside === true, regulars: readRegulars(body?.regulars) };
-  if (mockingGemini()) return Response.json(mockPhotoAnalysis(context.hint));
-  return respondWithAnalysis("analyze", () => analyzePhoto(image, mimeType, context));
+  const model = body?.model === "claude" ? "claude" : "gemini";
+  if (mockingGemini()) {
+    return Response.json(model === "claude" ? mockClaudeAnalysis(context.hint) : mockPhotoAnalysis(context.hint));
+  }
+  return respondWithAnalysis(`analyze (${model})`, () =>
+    analyzePhoto({ base64: image, mimeType: mimeType as "image/jpeg" | "image/png" | "image/webp" }, context, model),
+  );
 }

@@ -43,3 +43,19 @@ export function mockTextEstimate(description: string): { name: string; items: Es
     items: [item({ name, quantity: 1, unit: "piece", gramsPerUnit: 40, macros: { protein: 2, kcal: 150, carbs: 22, fat: 6 } })],
   };
 }
+
+/** The mock's stand-in for Claude: the same plate read a little differently, with a made-up cost. */
+export function mockClaudeAnalysis(hint: string): Analysis & { costUsd: number } {
+  const answer = mockPhotoAnalysis(hint);
+  if (answer.kind === "label") return { ...answer, costUsd: 0.019 };
+  return {
+    ...answer,
+    name: `${answer.name} (Claude)`,
+    items: answer.items.map((item) => ({
+      ...item,
+      uncertain: false,
+      macros: { ...item.macros, protein: Math.round(item.macros.protein * 1.2) },
+    })),
+    costUsd: 0.019,
+  };
+}

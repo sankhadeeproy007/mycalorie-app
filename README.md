@@ -44,6 +44,10 @@ Without an export:
 
 Options: `--from <export.json>` uses photos kept by the app, `--models gemini,sonnet` runs a subset, `--limit 10` caps the number of photos, `--effort low|medium|high` sets Claude's effort (default `low`, which keeps cost down), and `--yes` skips the confirmation. The `compare/` folder is git-ignored, so your photos stay on your machine.
 
+## Try Claude
+
+After a photo is read by Gemini, a **Gemini | Claude** switch lets you ask Claude Sonnet 5.5 about the same photo (about 2¢ each) and flip between the two answers before logging. Set `ANTHROPIC_API_KEY` on Vercel (Production) to turn it on; `CLAUDE_EFFORT` (`low` by default) is optional.
+
 ## Access code
 
 The deployed app opens on an access-code screen. Set two environment variables (in Vercel: Project → Settings → Environment Variables):

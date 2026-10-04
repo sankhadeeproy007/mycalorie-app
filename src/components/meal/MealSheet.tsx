@@ -6,13 +6,14 @@ import type { PreparedImage } from "@/lib/image";
 import { fromEstimate, itemsFromRegular, roundMacros, scaleMacros, totalMacros } from "@/lib/items";
 import { blurOnEnter, submitOnEnter } from "@/lib/keyboard";
 import { requestAnalysis, requestEstimate, type AnalyzeFailure } from "@/lib/meal-api";
-import type { Analysis, LabelReading, Macros, MealItem, MealLog, ProductInfo, SavedMeal } from "@/lib/types";
+import type { Analysis, LabelReading, Macros, MealItem, MealLog, PhotoModel, ProductInfo, SavedMeal } from "@/lib/types";
 import { SwitchRow } from "../SwitchRow";
 import { EMPTY_MACRO_VALUES, MacroFields, parseAmount, Sheet, SheetHeader, type MacroValues } from "../Sheet";
 import { AddItemPanel } from "./AddItemPanel";
 import { FAILURE_COPY } from "./failure-copy";
 import { ItemRow } from "./ItemRow";
 import { LabelReview } from "./LabelReview";
+import { ModelToggle, type ClaudeState } from "./ModelToggle";
 import styles from "./MealSheet.module.css";
 
 /** What opened the sheet. */
@@ -24,8 +25,18 @@ export type SheetRequest =
   | { kind: "edit"; regular: SavedMeal }
   | { kind: "log"; log: MealLog };
 
-/** The photo as sent and what the AI said about it, before any correction. */
-export type PhotoCapture = { image: PreparedImage; hint: string; outside: boolean; estimate: Analysis | null };
+/**
+ * The photo as sent and what each AI said about it, before any correction; `chosen` is the answer
+ * the owner logged from.
+ */
+export type PhotoCapture = {
+  image: PreparedImage;
+  hint: string;
+  outside: boolean;
+  estimate: Analysis | null;
+  claudeEstimate?: Analysis | null;
+  chosen: PhotoModel;
+};
 
 /** What to log, already as eaten; `saveAs` also keeps it as a regular. */
 export type LogEntry = {
@@ -170,14 +181,56 @@ function MealFlow({
   const [hint, setHint] = useState("");
   const [outside, setOutside] = useState(false);
   const [estimate, setEstimate] = useState<Analysis | null>(null);
+  // A second opinion on a photo: each AI's answer keeps its own edits, and the toggle flips between them.
+  const [active, setActive] = useState<PhotoModel>("gemini");
+  const [answers, setAnswers] = useState<Partial<Record<PhotoModel, Review>>>({});
+  const [claude, setClaude] = useState<ClaudeState>({ kind: "idle" });
+  const [claudeEstimate, setClaudeEstimate] = useState<Analysis | null>(null);
 
   const photo = request.kind === "photo" ? request : null;
   const logWithCapture = (entry: LogEntry) =>
-    onLog(photo ? { ...entry, capture: { image: photo.image, hint: hint.trim(), outside, estimate } } : entry);
+    onLog(
+      photo
+        ? {
+            ...entry,
+            capture: { image: photo.image, hint: hint.trim(), outside, estimate, claudeEstimate, chosen: active },
+          }
+        : entry,
+    );
   const regularsById = new Map(regulars.map((regular) => [regular.id, regular]));
 
+  const reviewOf = (name: string, items: MealItem[], matched?: SavedMeal): Review => ({
+    name,
+    items: uncertainFirst(items),
+    matched,
+    canSave: true,
+    totals: null,
+  });
   const startReview = (name: string, items: MealItem[], matched?: SavedMeal) =>
-    setStage({ name: "review", review: { name, items: uncertainFirst(items), matched, canSave: true, totals: null } });
+    setStage({ name: "review", review: reviewOf(name, items, matched) });
+
+  /** Keeps the answer on screen (with its edits) before showing another. */
+  const show = (model: PhotoModel, review: Review) => {
+    const current = stage.name === "review" ? stage.review : undefined;
+    setAnswers((saved) => ({ ...saved, ...(current ? { [active]: current } : {}), [model]: review }));
+    setActive(model);
+    setStage({ name: "review", review });
+  };
+
+  const askClaude = async () => {
+    if (!photo) return;
+    setClaude({ kind: "reading" });
+    const result = await requestAnalysis(photo.image, { hint: hint.trim(), outside, regulars }, "claude");
+    if (!result.ok) return setClaude({ kind: "failed", reason: result.reason, detail: result.detail });
+    const { costUsd, ...analysis } = result.value;
+    if (analysis.kind === "label") {
+      return setClaude({ kind: "failed", reason: "unreadable", detail: "Claude read it as a nutrition label" });
+    }
+    setClaudeEstimate(analysis);
+    setClaude({ kind: "answered", costUsd: costUsd ?? null });
+    const matched = analysis.matchedRegularId ? regularsById.get(analysis.matchedRegularId) : undefined;
+    show("claude", reviewOf(analysis.name, analysis.items.map(fromEstimate), matched));
+  };
 
   const read = async (event: FormEvent) => {
     event.preventDefault();
@@ -241,6 +294,9 @@ function MealFlow({
               {stage.detail && <span className={`mono ${styles.failureDetail}`}>details: {stage.detail}</span>}
             </p>
           )}
+          {photo && stage.failure && (
+            <ModelToggle active={active} geminiAnswered={false} claude={claude} onShow={() => undefined} onAskClaude={() => void askClaude()} />
+          )}
 
           <button type="submit" className={styles.primary} disabled={!photo && !hint.trim()}>
             {photo ? "Read photo" : "Estimate"}
@@ -266,6 +322,16 @@ function MealFlow({
 
       {stage.name === "label" && (
         <LabelReview reading={stage.reading} photoFile={photo?.file} photoUrl={photo?.image.dataUrl} onLog={logWithCapture} />
+      )}
+
+      {stage.name === "review" && photo && (answers.gemini || estimate || claude.kind !== "idle") && (
+        <ModelToggle
+          active={active}
+          geminiAnswered={estimate !== null}
+          claude={claude}
+          onShow={(model) => answers[model] && show(model, answers[model]!)}
+          onAskClaude={() => void askClaude()}
+        />
       )}
 
       {stage.name === "review" && (

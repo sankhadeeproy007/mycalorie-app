@@ -89,6 +89,9 @@ export type LabelReading = {
   perServing: Macros;
 } & ProductInfo;
 
+/** Which AI read a photo. */
+export type PhotoModel = "gemini" | "claude";
+
 export type Analysis =
   | { kind: "meal"; name: string; items: EstimatedItem[]; matchedRegularId: string | null }
   | { kind: "label"; label: LabelReading };

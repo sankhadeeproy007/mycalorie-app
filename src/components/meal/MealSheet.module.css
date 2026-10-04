@@ -84,6 +84,71 @@
   overflow-wrap: anywhere;
 }
 
+/* Gemini | Claude: a two-way segmented switch under the sheet header. */
+.models {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.modelSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-control);
+  background: var(--well);
+}
+
+.modelOption {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  background: none;
+}
+
+.modelOption[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--raised);
+  box-shadow: inset 0 0 0 1px var(--seam-strong);
+}
+
+.modelOption[aria-busy="true"] {
+  animation: pulse 1.2s var(--ease-out) infinite alternate;
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.55;
+  }
+}
+
+.modelOption:disabled:not([aria-busy="true"]) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (hover: hover) {
+  .modelOption:hover:not(:disabled):not([aria-pressed="true"]) {
+    color: var(--text);
+  }
+}
+
+.modelNote {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
 .inlineFailure {
   margin: 0;
   color: var(--muted);

@@ -171,6 +171,8 @@ export function HomeScreen() {
         hint: capture.hint,
         outside: capture.outside,
         estimate: capture.estimate,
+        claudeEstimate: capture.claudeEstimate,
+        chosen: capture.chosen,
         logged: { name: log.name, macros: log.macros, items: log.items },
       });
       refreshComparison();
