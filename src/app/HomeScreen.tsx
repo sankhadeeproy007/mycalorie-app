@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
+import { BackupPanel, BackupPrompt } from "@/components/Backup";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { DaySheet } from "@/components/DaySheet";
 import { DeveloperPanel } from "@/components/DeveloperPanel";
@@ -32,12 +33,14 @@ import {
   removeLog,
   removeSavedMeal,
   restoreLog,
+  restoreSavedMeal,
   saveLogToShelf,
   resetDemoData,
   saveMeal,
   setDemoMode,
   setKeepForComparison,
   setTargets,
+  updateSavedMeal,
   useAppState,
 } from "@/lib/store";
 import { ZERO_MACROS, type MealLog, type SavedMeal } from "@/lib/types";
@@ -115,6 +118,8 @@ export function HomeScreen() {
   const [editingTargets, setEditingTargets] = useState(false);
 
   const dismissNotice = useCallback(() => setNotice(null), []);
+  const noticeCount = useRef(0);
+  const notify = (message: string) => setNotice({ key: `note-${++noticeCount.current}`, message });
 
   const view = useMemo(() => {
     if (!state) return null;
@@ -203,6 +208,18 @@ export function HomeScreen() {
     setNotice({ key: `reg-${saved.id}`, message: `${log.name} added to regulars`, undo: () => removeSavedMeal(saved.id) });
   };
 
+  const removeRegular = (regular: SavedMeal) => {
+    const linked = (state?.logs ?? []).filter((log) => log.savedMealId === regular.id).map((log) => log.id);
+    setSheet(null);
+    removeSavedMeal(regular.id);
+    setNotice({
+      key: `unreg-${regular.id}`,
+      message: `${regular.name} removed from regulars`,
+      undo: () => restoreSavedMeal(regular, linked),
+    });
+  };
+
+  const hasData = Boolean(state && (state.logs.length > 0 || state.saved.length > 0));
   const remaining = view?.targets.protein ? Math.max(0, view.targets.protein - view.totals.protein) : null;
 
   return (
@@ -224,6 +241,7 @@ export function HomeScreen() {
 
         {view ? (
           <>
+            {!isDemo() && <BackupPrompt today={today} hasData={hasData} onNotice={notify} />}
             <ProteinPanel totals={view.totals} targets={view.targets} onEditTargets={() => setEditingTargets(true)} />
             <div className={styles.split}>
               <ScorePanel score={view.score} recent={view.recentScores} />
@@ -235,13 +253,19 @@ export function HomeScreen() {
                 onOpenDay={setOpenDay}
               />
             </div>
-            <Regulars meals={view.regulars} onLog={logRegular} onAdjust={(regular) => setSheet({ kind: "adjust", regular })} />
+            <Regulars
+              meals={view.regulars}
+              onLog={logRegular}
+              onAdjust={(regular) => setSheet({ kind: "adjust", regular })}
+              onEdit={(regular) => setSheet({ kind: "edit", regular })}
+            />
             <EatenToday logs={view.todaysLogs} onRemove={removeFromToday} onSaveToRegulars={addToRegulars} />
             <ComparisonPanel
               enabled={Boolean(state?.settings.keepForComparison)}
               onToggle={setKeepForComparison}
               revision={comparisonRevision}
             />
+            <BackupPanel today={today} demo={isDemo()} hasData={hasData} onNotice={notify} />
             {(developerShown || isDemo()) && (
               <DeveloperPanel
                 demo={isDemo()}
@@ -272,6 +296,12 @@ export function HomeScreen() {
           setSheet(null);
           logRegular(regular, 1);
         }}
+        onSaveRegular={(id, changes) => {
+          setSheet(null);
+          updateSavedMeal(id, changes);
+          notify(`${changes.name} updated`);
+        }}
+        onRemoveRegular={removeRegular}
         onClose={() => setSheet(null)}
       />
       {state && (

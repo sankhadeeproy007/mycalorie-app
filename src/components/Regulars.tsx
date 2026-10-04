@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SlidersHorizontal, UtensilsCrossed, X } from "lucide-react";
+import { Pencil, SlidersHorizontal, UtensilsCrossed, X } from "lucide-react";
 import { PORTIONS } from "@/lib/portions";
 import type { SavedMeal } from "@/lib/types";
 import { Panel } from "./Panel";
@@ -11,9 +11,9 @@ type RegularsProps = {
   meals: SavedMeal[];
   onLog: (meal: SavedMeal, portion: number) => void;
   onAdjust: (meal: SavedMeal) => void;
+  onEdit: (meal: SavedMeal) => void;
 };
 
-/** Saved meals as photo tiles: one tap logs a 1× portion, the corner chip picks another. */
 const COLLAPSED_KEY = "mycalorie:regulars-collapsed";
 
 function readCollapsed(): boolean {
@@ -24,7 +24,8 @@ function readCollapsed(): boolean {
   }
 }
 
-export function Regulars({ meals, onLog, onAdjust }: RegularsProps) {
+/** Saved meals as photo tiles: one tap logs a 1× portion, the corner chip picks another. */
+export function Regulars({ meals, onLog, onAdjust, onEdit }: RegularsProps) {
   const [portionFor, setPortionFor] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(readCollapsed);
 
@@ -68,6 +69,10 @@ export function Regulars({ meals, onLog, onAdjust }: RegularsProps) {
                 setPortionFor(null);
                 onAdjust(meal);
               }}
+              onEdit={() => {
+                setPortionFor(null);
+                onEdit(meal);
+              }}
             />
           ))}
         </ul>
@@ -82,9 +87,10 @@ type RegularTileProps = {
   onChoosePortion: (open: boolean) => void;
   onLog: (portion: number) => void;
   onAdjust: () => void;
+  onEdit: () => void;
 };
 
-function RegularTile({ meal, choosing, onChoosePortion, onLog, onAdjust }: RegularTileProps) {
+function RegularTile({ meal, choosing, onChoosePortion, onLog, onAdjust, onEdit }: RegularTileProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const protein = meal.macros.protein;
 
@@ -132,6 +138,9 @@ function RegularTile({ meal, choosing, onChoosePortion, onLog, onAdjust }: Regul
         <div ref={panelRef} className={styles.picker} role="group" aria-label={`Portion of ${meal.name}`}>
           <span className={styles.pickerHead}>
             <span className="visually-hidden">{meal.product ? `${meal.product.servingLabel}s` : "Portion"}</span>
+            <button type="button" className={styles.close} onClick={onEdit} aria-label={`Edit or remove ${meal.name}`}>
+              <Pencil size={13} strokeWidth={2} aria-hidden="true" />
+            </button>
             <button type="button" className={styles.close} onClick={onAdjust} aria-label={`Adjust ${meal.name} before logging`}>
               <SlidersHorizontal size={14} strokeWidth={2} aria-hidden="true" />
             </button>

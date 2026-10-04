@@ -1,0 +1,112 @@
+/* The daily prompt is a panel with a blue seam: noticed, not alarming, and it never blocks logging. */
+.prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent-edge) 50%, var(--seam));
+  border-radius: var(--radius-panel);
+  background: var(--panel);
+}
+
+.promptHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.promptTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.since {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.promptText,
+.text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.text + .actions {
+  margin-top: 12px;
+}
+
+.quiet,
+.strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-control);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.quiet {
+  border: 1px solid var(--seam-strong);
+  color: var(--muted);
+  background: none;
+}
+
+.strong {
+  border: 1px solid var(--accent-edge);
+  color: #fff;
+  background: var(--accent);
+}
+
+@media (hover: hover) {
+  .quiet:hover {
+    border-color: var(--muted);
+    color: var(--text);
+  }
+
+  .strong:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+}
+
+.strong:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--seam-strong);
+  border-radius: var(--radius-control);
+  background: var(--well);
+}
+
+.confirmText {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.problem {
+  margin: 8px 0 0;
+  color: var(--danger);
+  font-size: 0.85rem;
+}

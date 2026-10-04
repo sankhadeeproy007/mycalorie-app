@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Share } from "lucide-react";
 import { buildExport, clearSamples, sampleStats } from "@/lib/comparison-store";
+import { deliverFile, isAbort } from "@/lib/share-file";
 import { Panel } from "./Panel";
 import { SwitchRow } from "./SwitchRow";
 import styles from "./ComparisonPanel.module.css";
@@ -17,18 +18,6 @@ type ComparisonPanelProps = {
 type Status = { kind: "idle" } | { kind: "working"; label: string } | { kind: "message"; text: string };
 
 const fileSize = (bytes: number) => (bytes < 1_000_000 ? `${Math.max(1, Math.round(bytes / 1000))} KB` : `${(bytes / 1_000_000).toFixed(1)} MB`);
-
-/** Hands the file to the share sheet (AirDrop, Files) when the phone supports it, else downloads it. */
-async function deliver(file: File) {
-  if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title: "Mycalorie comparison photos" });
-    return;
-  }
-  const url = URL.createObjectURL(file);
-  const link = Object.assign(document.createElement("a"), { href: url, download: file.name });
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
 
 export function ComparisonPanel({ enabled, onToggle, revision }: ComparisonPanelProps) {
   const [stats, setStats] = useState<{ count: number; bytes: number } | null>(null);
@@ -57,10 +46,10 @@ export function ComparisonPanel({ enabled, onToggle, revision }: ComparisonPanel
       const data = await buildExport();
       const stamp = new Date().toISOString().slice(0, 10);
       const file = new File([JSON.stringify(data)], `mycalorie-comparison-${stamp}.json`, { type: "application/json" });
-      await deliver(file);
+      await deliverFile(file, "Mycalorie comparison photos");
       setStatus({ kind: "message", text: `Exported ${data.samples.length} photos. On your Mac: npm run compare -- --from <that file>` });
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return setStatus({ kind: "idle" });
+      if (isAbort(error)) return setStatus({ kind: "idle" });
       setStatus({ kind: "message", text: "Couldn’t export. Try again, or free some space on the phone." });
     }
   };

@@ -146,6 +146,15 @@
   color: var(--text);
 }
 
+.removeRegular {
+  color: var(--danger);
+}
+
+.removeRegular:hover {
+  color: var(--danger);
+  text-decoration-thickness: 2px;
+}
+
 .readingText {
   margin: 0;
   color: var(--muted);

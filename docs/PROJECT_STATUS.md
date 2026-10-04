@@ -47,14 +47,16 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 **Home screen** (`src/app/HomeScreen.tsx`), in the Console design: graphite panels, hairline seams, mono figures.
 - **Launch screen:** the 4×4 logo lights up in a wave, then fades. It's in the server HTML, so it shows instead of a blank screen.
 - **Status line:** the date on the left; on the right, a drawn status dot (a ring while today is open) with "18d streak", or "18d streak · hit". Tapping the date 5 times within 2.5 s reveals the developer panel.
+- **Backup prompt:** at the top on the first open of each day, until acted on: "Back up today" with Save backup / Not today. It's skipped on a day that already has a backup, and it never shows in demo mode. On a fresh install with no data it offers "Restore a backup?" instead.
 - **Protein panel:** "N g to go" (or "+N g past target"), a bar, and kcal/carbs/fat rows showing what's left and the target. The sliders icon opens the targets sheet.
 - **Day score panel:** "N so far", 7 past days plus today (outlined) on one 0–100 scale, and the 7-day average as a dashed line.
 - **Streak panel:**
   - A 12-week contribution graph in a protein-blue ramp, with a legend (none / under / hit).
   - Tapping anywhere on it opens the nearest day in the **day sheet**: read-only totals against targets, the score, and meals with their items, with ‹ › to step between days.
-- **Regulars:** photo tiles. A tap logs 1×. The "1×" tab opens the portion picker (½, 1, 1½, 2) plus "adjust before logging". Tapping the panel header folds it to just the header and count; the choice is remembered on the phone.
+- **Regulars:** photo tiles. A tap logs 1×. The "1×" tab opens the portion picker (½, 1, 1½, 2) plus a pencil (**edit regular**) and "adjust before logging". Edit regular reopens it in the meal sheet: rename, change items, Save changes, or Remove from regulars (with undo, which also relinks past logs). A product is edited as its per-serving label values; `per100` is rescaled to match. Tapping the panel header folds it to just the header and count; the choice is remembered on the phone.
 - **Today:** the meal list, with save-to-regulars and remove (with undo).
 - **Model comparison panel:** the "Keep meal photos for comparison" switch, a count, Export and Clear.
+- **Backup panel:** "last: today / N days ago / never", Back up now and Restore.
 - **Developer panel (hidden):** a "Demo data" switch, "Reset demo data", and "hide".
 - **Dock:** "Log a meal" (photo) and "Type" (describe it, or enter numbers).
 
@@ -101,6 +103,11 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 - **In the app:** with the switch on, each logged photo is kept with its hint, the Outside setting, Gemini's first answer and what was finally logged. Export shares one JSON file. Demo meals are never kept, and undoing a log drops its photo.
 - **On the Mac:** `npm run compare -- --from <export.json>` re-sends each photo to Gemini Flash and Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5 (effort `low` by default). It scores each model against what was logged, adds a column for the app's original Gemini answer, measures real cost per photo, and writes `compare/report-*.html`. It asks before spending. `compare/` is git-ignored.
 
+**Backups (`src/lib/backup.ts`, `src/components/Backup.tsx`):**
+- A backup is `mycalorie-backup-YYYY-MM-DD.json`: `{ app: "mycalorie", version: 1, exportedAt, data: AppState }`, the real data only (regular photos included, comparison photos not). It goes to the share sheet (Save to Files) via `src/lib/share-file.ts`, or downloads where sharing isn't available.
+- Restore validates the file, shows its date and counts, and replaces all real data after a confirm. A bad file shows an error. Restore and backup are off in demo mode.
+- Status lives in `mycalorie:backup` (`lastAt`, `dismissedDay`). A restore records the file's own date as the last backup.
+
 ## Data model (`src/lib/types.ts`)
 
 - `AppState = { settings: { targets, keepForComparison? }, saved: SavedMeal[], logs: MealLog[] }`, stored in localStorage under `mycalorie:v1`. Demo data uses `mycalorie:demo:v5`: 12 weeks of 3–4 real meals per day with items, built from Indian meal templates in `src/lib/demo.ts`, with an 18-day streak and a best run of 26. It uses the demo switch `mycalorie:demo-mode`, and the developer flag `mycalorie:developer`. Whether the regulars panel is folded lives in `mycalorie:regulars-collapsed`.
@@ -143,11 +150,11 @@ The owner confirmed a banana photo works. If a real call fails on the schema, th
 4. **Later:**
    - Supabase sync, so data survives a deleted app and works across devices (only `store.ts` should need to change).
    - Storing targets per day, so past days are scored against the targets in force then.
-   - A screen to rename, edit and delete regulars and products.
+   - Changing or removing a regular's photo (editing covers name, items and values).
    - History and settings screens.
    - Learning from corrections.
    - iOS splash images, to cover the brief dark moment before the HTML loads.
 5. **Known limitations:**
    - The lockout counter lives in server memory.
-   - iOS may clear a home-screen app's storage after weeks without use, so export comparison photos as a backup now and then.
+   - iOS may clear a home-screen app's storage after weeks without use, and deleting the app deletes its data. The daily backup covers meals, regulars and targets; export comparison photos separately.
    - The day sheet is read-only.

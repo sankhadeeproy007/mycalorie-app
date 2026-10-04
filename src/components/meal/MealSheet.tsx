@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Plus } from "lucide-react";
 import type { PreparedImage } from "@/lib/image";
-import { fromEstimate, itemsFromRegular, totalMacros } from "@/lib/items";
+import { fromEstimate, itemsFromRegular, roundMacros, scaleMacros, totalMacros } from "@/lib/items";
 import { blurOnEnter, submitOnEnter } from "@/lib/keyboard";
 import { requestAnalysis, requestEstimate, type AnalyzeFailure } from "@/lib/meal-api";
 import type { Analysis, LabelReading, Macros, MealItem, ProductInfo, SavedMeal } from "@/lib/types";
@@ -20,7 +20,8 @@ export type SheetRequest =
   | { kind: "photo"; image: PreparedImage; file: File }
   /** `failure` explains why a photo couldn't be used, when the sheet falls back to describing. */
   | { kind: "text"; failure?: AnalyzeFailure }
-  | { kind: "adjust"; regular: SavedMeal };
+  | { kind: "adjust"; regular: SavedMeal }
+  | { kind: "edit"; regular: SavedMeal };
 
 /** The photo as sent and what the AI said about it, before any correction. */
 export type PhotoCapture = { image: PreparedImage; hint: string; outside: boolean; estimate: Analysis | null };
@@ -37,25 +38,28 @@ export type LogEntry = {
   capture?: PhotoCapture;
 };
 
+/** A regular as changed in the edit sheet. */
+export type RegularChanges = { name: string; macros: Macros; items?: MealItem[]; product?: ProductInfo };
+
 type MealSheetProps = {
   request: SheetRequest | null;
   regulars: SavedMeal[];
   onLog: (entry: LogEntry) => void;
   onLogRegular: (regular: SavedMeal) => void;
+  onSaveRegular: (id: string, changes: RegularChanges) => void;
+  onRemoveRegular: (regular: SavedMeal) => void;
   onClose: () => void;
 };
 
-export function MealSheet({ request, regulars, onLog, onLogRegular, onClose }: MealSheetProps) {
+export function MealSheet({ request, ...rest }: MealSheetProps) {
+  const { onClose } = rest;
   return (
     <Sheet open={request !== null} labelledBy="meal-heading" onClose={onClose}>
       {request && (
         <MealFlow
-          key={request.kind === "photo" ? request.image.dataUrl : request.kind === "adjust" ? request.regular.id : "text"}
+          key={request.kind === "photo" ? request.image.dataUrl : request.kind === "text" ? "text" : `${request.kind}-${request.regular.id}`}
           request={request}
-          regulars={regulars}
-          onLog={onLog}
-          onLogRegular={onLogRegular}
-          onClose={onClose}
+          {...rest}
         />
       )}
     </Sheet>
@@ -71,6 +75,8 @@ type Review = {
   canSave: boolean;
   /** Set when the totals were typed directly instead of summed from items. */
   totals: MacroValues | null;
+  /** The regular being edited: the sheet saves it instead of logging a meal. */
+  editing?: SavedMeal;
 };
 
 type Stage =
@@ -83,26 +89,42 @@ type Stage =
 const uncertainFirst = (items: MealItem[]) =>
   [...items].sort((a, b) => Number(Boolean(b.uncertain)) - Number(Boolean(a.uncertain)));
 
+const asValues = (macros: Macros): MacroValues => ({
+  protein: String(macros.protein),
+  kcal: String(macros.kcal),
+  carbs: String(macros.carbs),
+  fat: String(macros.fat),
+});
+
 function initialStage(request: SheetRequest): Stage {
   if (request.kind === "text") return { name: "compose", failure: request.failure };
   if (request.kind === "photo") return { name: "compose" };
+  const { regular } = request;
+  const editing = request.kind === "edit" ? regular : undefined;
   return {
     name: "review",
     review: {
-      name: request.regular.name,
-      items: itemsFromRegular(request.regular),
-      savedMealId: request.regular.id,
+      name: regular.name,
+      items: itemsFromRegular(regular),
+      savedMealId: regular.id,
       canSave: false,
-      totals: null,
+      // A product is edited as its label values for one serving.
+      totals: editing?.product ? asValues(regular.macros) : null,
+      editing,
     },
   };
 }
 
-const TITLES: Record<SheetRequest["kind"], string> = { photo: "New meal", text: "Describe a meal", adjust: "Adjust before logging" };
+const TITLES: Record<SheetRequest["kind"], string> = {
+  photo: "New meal",
+  text: "Describe a meal",
+  adjust: "Adjust before logging",
+  edit: "Edit regular",
+};
 
 type MealFlowProps = Omit<MealSheetProps, "request"> & { request: SheetRequest };
 
-function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowProps) {
+function MealFlow({ request, regulars, onLog, onLogRegular, onSaveRegular, onRemoveRegular, onClose }: MealFlowProps) {
   const [stage, setStage] = useState<Stage>(() => initialStage(request));
   const [hint, setHint] = useState("");
   const [outside, setOutside] = useState(false);
@@ -214,6 +236,8 @@ function MealFlow({ request, regulars, onLog, onLogRegular, onClose }: MealFlowP
           photo={photo}
           onLog={logWithCapture}
           onLogRegular={onLogRegular}
+          onSaveRegular={onSaveRegular}
+          onRemoveRegular={onRemoveRegular}
         />
       )}
     </div>
@@ -228,9 +252,27 @@ type ReviewStageProps = {
   photo: { file: File } | null;
   onLog: (entry: LogEntry) => void;
   onLogRegular: (regular: SavedMeal) => void;
+  onSaveRegular: (id: string, changes: RegularChanges) => void;
+  onRemoveRegular: (regular: SavedMeal) => void;
 };
 
-function ReviewStage({ review, onChange, regulars, outside, photo, onLog, onLogRegular }: ReviewStageProps) {
+/** A product's per-100 values follow an edited serving, so it still works by weight as an ingredient. */
+function editedProduct(product: ProductInfo, perServing: Macros): ProductInfo {
+  if (!product.per100 || product.servingSize <= 0) return product;
+  return { ...product, per100: roundMacros(scaleMacros(perServing, 100 / product.servingSize)) };
+}
+
+function ReviewStage({
+  review,
+  onChange,
+  regulars,
+  outside,
+  photo,
+  onLog,
+  onLogRegular,
+  onSaveRegular,
+  onRemoveRegular,
+}: ReviewStageProps) {
   const [adding, setAdding] = useState(false);
   const [saveToRegulars, setSaveToRegulars] = useState(false);
 
@@ -248,11 +290,23 @@ function ReviewStage({ review, onChange, regulars, outside, photo, onLog, onLogR
 
   const setItems = (items: MealItem[]) => onChange({ ...review, items });
 
+  const { editing } = review;
+  const product = editing?.product;
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!valid) return;
     const name = review.name.trim();
     const items = typed ? undefined : review.items;
+    if (editing) {
+      return onSaveRegular(editing.id, {
+        name,
+        macros,
+        // A product keeps its one-serving item; otherwise typed totals replace the items.
+        items: product ? editing.items : items,
+        product: product && editedProduct(product, macros),
+      });
+    }
     onLog({
       name,
       macros,
@@ -311,7 +365,7 @@ function ReviewStage({ review, onChange, regulars, outside, photo, onLog, onLogR
           )}
           {adding ? (
             <AddItemPanel
-              regulars={regulars}
+              regulars={editing ? regulars.filter((regular) => regular.id !== editing.id) : regulars}
               outside={outside}
               onAddRegular={(regular) => {
                 setItems([...review.items, ...itemsFromRegular(regular)]);
@@ -334,9 +388,9 @@ function ReviewStage({ review, onChange, regulars, outside, photo, onLog, onLogR
       <section className={styles.block} aria-labelledby="totals-heading">
         <div className={styles.blockHead}>
           <h3 id="totals-heading" className={styles.blockTitle}>
-            total
+            {product ? `per ${product.servingLabel} · ${product.servingSize} ${product.servingUnit}` : "total"}
           </h3>
-          {review.items.length > 0 && (
+          {review.items.length > 0 && !product && (
             <button
               type="button"
               className={styles.textButton}
@@ -360,7 +414,7 @@ function ReviewStage({ review, onChange, regulars, outside, photo, onLog, onLogR
         </div>
         {typed ? (
           <MacroFields
-            legend="Totals for this meal"
+            legend={product ? `Values for one ${product.servingLabel}` : "Totals for this meal"}
             values={typed}
             onChange={(totals) => onChange({ ...review, totals })}
             required={["protein"]}
@@ -390,9 +444,14 @@ function ReviewStage({ review, onChange, regulars, outside, photo, onLog, onLogR
         </label>
       )}
 
-      <button type="submit" className={styles.primary} disabled={!valid} data-autofocus={review.name ? "" : undefined}>
-        Log {macros.protein} g protein
+      <button type="submit" className={styles.primary} disabled={!valid} data-autofocus={review.name && !editing ? "" : undefined}>
+        {editing ? "Save changes" : `Log ${macros.protein} g protein`}
       </button>
+      {editing && (
+        <button type="button" className={`${styles.textButton} ${styles.removeRegular}`} onClick={() => onRemoveRegular(editing)}>
+          Remove from regulars
+        </button>
+      )}
     </form>
   );
 }

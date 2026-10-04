@@ -156,6 +156,43 @@ export function removeSavedMeal(id: string) {
   }));
 }
 
+type RegularChanges = { name: string; macros: Macros; items?: MealItem[]; product?: ProductInfo };
+
+/** Changes a regular from now on; meals already logged from it keep what they were logged with. */
+export function updateSavedMeal(id: string, changes: RegularChanges) {
+  commit((prev) => ({
+    ...prev,
+    saved: prev.saved.map((meal) => (meal.id === id ? { ...meal, ...changes } : meal)),
+  }));
+}
+
+/** Undoes `removeSavedMeal`: the regular returns with the meals that were logged from it. */
+export function restoreSavedMeal(meal: SavedMeal, linkedLogIds: string[]) {
+  const linked = new Set(linkedLogIds);
+  commit((prev) => ({
+    ...prev,
+    saved: [...prev.saved, meal].sort((a, b) => a.createdAt - b.createdAt),
+    logs: prev.logs.map((log) => (linked.has(log.id) ? { ...log, savedMealId: meal.id } : log)),
+  }));
+}
+
+/** The real data, as stored, for a backup; demo data is never backed up. */
+export function readRealState(): AppState {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) return migrate(JSON.parse(raw));
+  } catch {
+    // Fall through to nothing stored.
+  }
+  return EMPTY_STATE;
+}
+
+/** Replaces the real data with a backup. Throws when the phone has no room for it. */
+export function replaceRealState(next: AppState) {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrate(next)));
+  if (!isDemo()) reload();
+}
+
 function reload() {
   state = load();
   listeners.forEach((listener) => listener());
