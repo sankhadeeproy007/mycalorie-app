@@ -46,7 +46,7 @@ Options: `--from <export.json>` uses photos kept by the app, `--models gemini,so
 
 ## Claude Sonnet and Gemini
 
-For the owner, Claude Sonnet 5.5 reads meal photos and descriptions first (about 2¢ a photo), and free Gemini takes over automatically if Claude can't answer. A **Claude | Gemini** switch on each photo asks the other model and flips between the two answers. "Read meals with Claude Sonnet" in the AI models panel puts Gemini first instead. Set `ANTHROPIC_API_KEY` on Vercel (Production) for Claude; `CLAUDE_EFFORT` (`low` by default) is optional. Other people always use Gemini. Logging a regular never calls either model.
+For the owner, Claude Sonnet 5.5 reads meal photos and descriptions first (about 2¢ a photo), and free Gemini takes over automatically if Claude can't answer. A **Claude | Gemini** switch on each photo asks the other model and flips between the two answers. "Read meals with Claude Sonnet" in the developer panel (tap the date 5 times) puts Gemini first instead. Set `ANTHROPIC_API_KEY` on Vercel (Production) for Claude; `CLAUDE_EFFORT` (`low` by default) is optional. Other people always use Gemini. Logging a regular never calls either model.
 
 ## Access code
 
