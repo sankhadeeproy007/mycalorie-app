@@ -76,6 +76,12 @@ export async function removeSampleForLog(logId: string): Promise<void> {
   await Promise.all(keys.map((key) => withStore("readwrite", (store) => store.delete(key))));
 }
 
+/** A corrected log is the better answer key, so its kept sample follows the correction. */
+export async function updateSampleForLog(logId: string, logged: ComparisonSample["logged"]): Promise<void> {
+  const samples = await withStore("readonly", (store) => store.index("logId").getAll(logId) as IDBRequest<ComparisonSample[]>);
+  await Promise.all(samples.map((sample) => withStore("readwrite", (store) => store.put({ ...sample, logged }))));
+}
+
 export async function sampleStats(): Promise<{ count: number; bytes: number }> {
   const samples = await listSamples();
   return { count: samples.length, bytes: samples.reduce((sum, sample) => sum + sample.photo.size, 0) };

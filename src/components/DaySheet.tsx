@@ -16,6 +16,7 @@ type DaySheetProps = {
   logs: MealLog[];
   targets: Targets;
   onNavigate: (day: string) => void;
+  onEditLog: (log: MealLog) => void;
   onClose: () => void;
 };
 
@@ -34,16 +35,16 @@ const ROWS = [
   { key: "fat", label: "fat", unit: " g" },
 ] as const;
 
-/** One past day, read-only: protein against the target, the other macros, the score, and every meal with its items. */
-export function DaySheet({ day, today, logs, targets, onNavigate, onClose }: DaySheetProps) {
+/** One day: protein against the target, the other macros, the score, and every meal with its items; a meal opens to be corrected. */
+export function DaySheet({ day, ...rest }: DaySheetProps) {
   return (
-    <Sheet open={day !== null} labelledBy="day-heading" onClose={onClose}>
-      {day && <DayView day={day} today={today} logs={logs} targets={targets} onNavigate={onNavigate} onClose={onClose} />}
+    <Sheet open={day !== null} labelledBy="day-heading" onClose={rest.onClose}>
+      {day && <DayView day={day} {...rest} />}
     </Sheet>
   );
 }
 
-function DayView({ day, today, logs, targets, onNavigate, onClose }: DaySheetProps & { day: string }) {
+function DayView({ day, today, logs, targets, onNavigate, onEditLog, onClose }: DaySheetProps & { day: string }) {
   const meals = logs.filter((log) => log.day === day).sort((a, b) => a.eatenAt - b.eatenAt);
   const totals: Macros = meals.reduce(
     (sum, log) => ({
@@ -133,7 +134,7 @@ function DayView({ day, today, logs, targets, onNavigate, onClose }: DaySheetPro
           <ol className={styles.meals}>
             {meals.map((log) => (
               <li key={log.id} className={styles.meal}>
-                <div className={styles.mealHead}>
+                <button type="button" className={styles.mealHead} onClick={() => onEditLog(log)}>
                   <span className={`mono ${styles.time}`}>{formatClock(log.eatenAt)}</span>
                   <span className={styles.mealName}>
                     {log.name}
@@ -143,7 +144,8 @@ function DayView({ day, today, logs, targets, onNavigate, onClose }: DaySheetPro
                     <span className={styles.mealProtein}>{log.macros.protein} g</span>
                     <span>{formatAmount(log.macros.kcal)} kcal</span>
                   </span>
-                </div>
+                  <span className="visually-hidden">, edit</span>
+                </button>
                 {log.items && log.items.length > 1 && (
                   <ul className={`mono ${styles.items}`}>
                     {log.items.map((item) => (

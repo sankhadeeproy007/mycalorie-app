@@ -7,8 +7,8 @@ import { DaySheet } from "@/components/DaySheet";
 import { DeveloperPanel } from "@/components/DeveloperPanel";
 import { LaunchScreen } from "@/components/LaunchScreen";
 import { Dock } from "@/components/Dock";
-import { MealSheet, type LogEntry, type PhotoCapture, type SheetRequest } from "@/components/meal/MealSheet";
-import { addSample, removeSampleForLog } from "@/lib/comparison-store";
+import { MealSheet, type LogChanges, type LogEntry, type PhotoCapture, type SheetRequest } from "@/components/meal/MealSheet";
+import { addSample, removeSampleForLog, updateSampleForLog } from "@/lib/comparison-store";
 import { EatenToday } from "@/components/EatenToday";
 import { ScorePanel, StreakPanel } from "@/components/ProgressPanels";
 import { ProteinPanel } from "@/components/ProteinPanel";
@@ -40,6 +40,7 @@ import {
   setDemoMode,
   setKeepForComparison,
   setTargets,
+  updateLog,
   updateSavedMeal,
   useAppState,
 } from "@/lib/store";
@@ -90,6 +91,8 @@ export function HomeScreen() {
   const today = useToday();
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
   const [openDay, setOpenDay] = useState<string | null>(null);
+  /** A meal opened from the day sheet returns there when its edit sheet closes. */
+  const [returnDay, setReturnDay] = useState<string | null>(null);
   const [developerShown, setDeveloperShown] = useState(readDeveloperShown);
   const dateTaps = useRef<number[]>([]);
 
@@ -219,6 +222,33 @@ export function HomeScreen() {
     });
   };
 
+  const closeSheet = () => {
+    setSheet(null);
+    if (returnDay) setOpenDay(returnDay);
+    setReturnDay(null);
+  };
+
+  const editLog = (log: MealLog) => setSheet({ kind: "log", log });
+
+  const editLogFromDay = (log: MealLog) => {
+    setReturnDay(openDay);
+    setOpenDay(null);
+    editLog(log);
+  };
+
+  const saveLog = (id: string, changes: LogChanges) => {
+    closeSheet();
+    updateLog(id, changes);
+    void updateSampleForLog(id, changes).catch(() => undefined);
+    notify(`${changes.name} updated`);
+  };
+
+  const deleteLog = (log: MealLog) => {
+    closeSheet();
+    removeLog(log.id);
+    setNotice({ key: `rm-${log.id}`, message: `removed ${log.name}`, undo: () => restoreLog(log) });
+  };
+
   const hasData = Boolean(state && (state.logs.length > 0 || state.saved.length > 0));
   const remaining = view?.targets.protein ? Math.max(0, view.targets.protein - view.totals.protein) : null;
 
@@ -259,7 +289,7 @@ export function HomeScreen() {
               onAdjust={(regular) => setSheet({ kind: "adjust", regular })}
               onEdit={(regular) => setSheet({ kind: "edit", regular })}
             />
-            <EatenToday logs={view.todaysLogs} onRemove={removeFromToday} onSaveToRegulars={addToRegulars} />
+            <EatenToday logs={view.todaysLogs} onRemove={removeFromToday} onSaveToRegulars={addToRegulars} onEdit={editLog} />
             <ComparisonPanel
               enabled={Boolean(state?.settings.keepForComparison)}
               onToggle={setKeepForComparison}
@@ -302,7 +332,9 @@ export function HomeScreen() {
           notify(`${changes.name} updated`);
         }}
         onRemoveRegular={removeRegular}
-        onClose={() => setSheet(null)}
+        onSaveLog={saveLog}
+        onDeleteLog={deleteLog}
+        onClose={closeSheet}
       />
       {state && (
         <DaySheet
@@ -311,6 +343,7 @@ export function HomeScreen() {
           logs={state.logs}
           targets={state.settings.targets}
           onNavigate={setOpenDay}
+          onEditLog={editLogFromDay}
           onClose={() => setOpenDay(null)}
         />
       )}

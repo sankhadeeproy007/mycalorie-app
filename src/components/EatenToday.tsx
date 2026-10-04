@@ -12,9 +12,10 @@ type EatenTodayProps = {
   logs: MealLog[];
   onRemove: (log: MealLog) => void;
   onSaveToRegulars: (log: MealLog) => void;
+  onEdit: (log: MealLog) => void;
 };
 
-export function EatenToday({ logs, onRemove, onSaveToRegulars }: EatenTodayProps) {
+export function EatenToday({ logs, onRemove, onSaveToRegulars, onEdit }: EatenTodayProps) {
   return (
     <Panel
       title="today"
@@ -27,15 +28,18 @@ export function EatenToday({ logs, onRemove, onSaveToRegulars }: EatenTodayProps
         <ol className={styles.list}>
           {[...logs].reverse().map((log) => (
             <li key={log.id} className={styles.item}>
-              <span className={`mono ${styles.time}`}>{formatClock(log.eatenAt)}</span>
-              <span className={styles.name}>
-                {log.name}
-                {log.portion !== 1 && <span className={styles.portion}> · {portionLabel(log.portion)}×</span>}
-              </span>
-              <span className={`mono ${styles.numbers}`}>
-                <span className={styles.protein}>{log.macros.protein} g</span>
-                <span className={styles.kcal}>{formatAmount(log.macros.kcal)} kcal</span>
-              </span>
+              <button type="button" className={styles.open} onClick={() => onEdit(log)}>
+                <span className={`mono ${styles.time}`}>{formatClock(log.eatenAt)}</span>
+                <span className={styles.name}>
+                  {log.name}
+                  {log.portion !== 1 && <span className={styles.portion}> · {portionLabel(log.portion)}×</span>}
+                </span>
+                <span className={`mono ${styles.numbers}`}>
+                  <span className={styles.protein}>{log.macros.protein} g</span>
+                  <span className={styles.kcal}>{formatAmount(log.macros.kcal)} kcal</span>
+                </span>
+                <span className="visually-hidden">, edit</span>
+              </button>
               <span className={styles.actions}>
                 {log.savedMealId ? (
                   <span className={styles.saved} title="In your regulars">

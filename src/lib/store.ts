@@ -121,6 +121,16 @@ export function removeLog(id: string) {
   commit((prev) => ({ ...prev, logs: prev.logs.filter((log) => log.id !== id) }));
 }
 
+type LogChanges = { name: string; macros: Macros; items?: MealItem[] };
+
+/** Corrects a logged meal in place; its time, day and portion stay as they were. */
+export function updateLog(id: string, changes: LogChanges) {
+  commit((prev) => ({
+    ...prev,
+    logs: prev.logs.map((log) => (log.id === id ? { ...log, ...changes } : log)),
+  }));
+}
+
 /** Puts a removed log back in its original place in time. */
 export function restoreLog(log: MealLog) {
   commit((prev) => ({ ...prev, logs: [...prev.logs, log].sort((a, b) => a.eatenAt - b.eatenAt) }));

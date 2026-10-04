@@ -146,11 +146,11 @@
   color: var(--text);
 }
 
-.removeRegular {
+.destructive {
   color: var(--danger);
 }
 
-.removeRegular:hover {
+.destructive:hover {
   color: var(--danger);
   text-decoration-thickness: 2px;
 }

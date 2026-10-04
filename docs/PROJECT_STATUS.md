@@ -52,9 +52,9 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 - **Day score panel:** "N so far", 7 past days plus today (outlined) on one 0–100 scale, and the 7-day average as a dashed line.
 - **Streak panel:**
   - A 12-week contribution graph in a protein-blue ramp, with a legend (none / under / hit).
-  - Tapping anywhere on it opens the nearest day in the **day sheet**: read-only totals against targets, the score, and meals with their items, with ‹ › to step between days.
+  - Tapping anywhere on it opens the nearest day in the **day sheet**: read-only totals against targets, the score, and meals with their items, with ‹ › to step between days. Tapping a meal opens it in **Edit meal**; closing that sheet returns to the day.
 - **Regulars:** photo tiles. A tap logs 1×. The "1×" tab opens the portion picker (½, 1, 1½, 2) plus a pencil (**edit regular**) and "adjust before logging". Edit regular reopens it in the meal sheet: rename, change items, Save changes, or Remove from regulars (with undo, which also relinks past logs). A product is edited as its per-serving label values; `per100` is rescaled to match. Tapping the panel header folds it to just the header and count; the choice is remembered on the phone.
-- **Today:** the meal list, with save-to-regulars and remove (with undo).
+- **Today:** the meal list, with save-to-regulars and remove (with undo). Tapping a meal opens **Edit meal**: the meal sheet with its items as eaten (or its totals, for a meal typed as numbers), Save changes, and Delete meal (with undo). Time, day and portion stay as logged. Saving also updates that meal's kept comparison sample (`updateSampleForLog`), so the comparison scores against the corrected numbers.
 - **Model comparison panel:** the "Keep meal photos for comparison" switch, a count, Export and Clear.
 - **Backup panel:** "last: today / N days ago / never", Back up now and Restore.
 - **Developer panel (hidden):** a "Demo data" switch, "Reset demo data", and "hide".
@@ -157,4 +157,4 @@ The owner confirmed a banana photo works. If a real call fails on the schema, th
 5. **Known limitations:**
    - The lockout counter lives in server memory.
    - iOS may clear a home-screen app's storage after weeks without use, and deleting the app deletes its data. The daily backup covers meals, regulars and targets; export comparison photos separately.
-   - The day sheet is read-only.
+   - A logged meal's time and day can't be changed.

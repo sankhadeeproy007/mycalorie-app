@@ -98,8 +98,31 @@
 }
 
 .meal {
+  position: relative;
   padding: 10px 12px;
   border-bottom: 1px solid var(--seam);
+}
+
+.meal:first-child {
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+}
+
+.meal:last-child {
+  border-radius: 0 0 var(--radius-control) var(--radius-control);
+}
+
+.meal:only-child {
+  border-radius: var(--radius-control);
+}
+
+.meal:has(.mealHead:active) {
+  background: var(--raised);
+}
+
+@media (hover: hover) {
+  .meal:has(.mealHead:hover) {
+    background: var(--raised);
+  }
 }
 
 .meal:last-child {
@@ -111,6 +134,30 @@
   grid-template-columns: minmax(3.6em, auto) 1fr auto;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: none;
+}
+
+/* The whole row, items included, is the tap target. */
+.mealHead::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.mealHead:focus-visible {
+  outline: none;
+}
+
+.mealHead:focus-visible::after {
+  outline: 2px solid var(--accent-edge);
+  outline-offset: -2px;
 }
 
 .time {

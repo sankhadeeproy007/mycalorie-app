@@ -16,8 +16,34 @@
   align-items: center;
   gap: 10px;
   min-height: 52px;
-  padding: 4px 4px 4px 12px;
+  padding: 4px 4px 4px 0;
   border-bottom: 1px solid var(--seam);
+}
+
+/* Time, name and numbers are one target that opens the meal to correct it. */
+.open {
+  display: grid;
+  grid-column: 1 / 4;
+  grid-template-columns: subgrid;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 0 0 12px;
+  border: 0;
+  border-radius: 0 8px 8px 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: none;
+}
+
+.open:active {
+  background: var(--raised);
+}
+
+@media (hover: hover) {
+  .open:hover {
+    background: var(--raised);
+  }
 }
 
 .item:last-child {
