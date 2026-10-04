@@ -57,6 +57,6 @@ A device stays unlocked for six months. Five wrong codes in a row lock that conn
 
 The phone's local storage is the working copy, so the app opens instantly and works offline. With a Redis store connected, every change is also sent to the cloud, and a fresh install fills itself from there after the access code.
 
-To turn cloud sync on (free): in Vercel, open the project → **Storage** → **Create Database** → **Upstash for Redis** (free plan), and connect it to this project. That adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`; redeploy afterwards. A direct Upstash setup can use `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` instead. Without either pair, sync stays off and the app works from the phone alone.
+To turn cloud sync on (free): in Vercel, open the project → **Storage** → create a free Redis database and connect it to this project, then redeploy. The app uses whichever variables the integration adds: `REDIS_URL` (a direct connection), or `KV_REST_API_URL` and `KV_REST_API_TOKEN` (Upstash's REST API; `UPSTASH_REDIS_REST_URL` / `_TOKEN` also work). Without any of them, sync stays off and the app works from the phone alone.
 
 The cloud keeps one current copy plus the last state of each day for 30 days (`mycalorie:snapshot:YYYY-MM-DD`), as a way back from a bad overwrite. Backup files (Sync & backup panel) are a further copy.

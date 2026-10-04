@@ -40,7 +40,8 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 | `ACCESS_CODE` | 4–8 digits for the unlock screen. Changing it signs every device out. |
 | `SESSION_SECRET` | Random string that signs the session cookie (`openssl rand -hex 32`). |
 | `ANTHROPIC_API_KEY` | Local `.env.local` only, for `npm run compare`. Not used by the app. |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Upstash Redis for cloud sync, set by Vercel's Upstash integration (`UPSTASH_REDIS_REST_URL` / `_TOKEN` also work). Without them sync is off. |
+| `REDIS_URL` | Cloud sync over a direct Redis connection; set by the Redis integration connected on Vercel (this is what production uses). |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Alternative: Upstash's REST API (`UPSTASH_REDIS_REST_URL` / `_TOKEN` also work); wins over `REDIS_URL` when set. With neither, sync is off. |
 | `MOCK_GEMINI=1` | Development only: canned AI answers so the screens work without a key. |
 
 ## What's built
@@ -105,11 +106,12 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 - **On the Mac:** `npm run compare -- --from <export.json>` re-sends each photo to Gemini Flash and Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5 (effort `low` by default). It scores each model against what was logged, adds a column for the app's original Gemini answer, measures real cost per photo, and writes `compare/report-*.html`. It asks before spending. `compare/` is git-ignored.
 
 **Cloud sync (`src/lib/sync.ts`, `src/app/api/data/route.ts`, `src/lib/cloud-store.ts`):**
-- The phone's localStorage stays the working copy. Upstash Redis (REST API over `fetch`, no SDK) holds `mycalorie:state` (`{ state, updatedAt }`), `mycalorie:rev`, and `mycalorie:snapshot:YYYY-MM-DD` (that day's last state, kept 30 days).
+- The phone's localStorage stays the working copy. Redis holds `mycalorie:state` (`{ state, updatedAt }`), `mycalorie:rev`, and `mycalorie:snapshot:YYYY-MM-DD` (that day's last state, kept 30 days).
 - `/api/data`: GET (`?have=<rev>` skips the state when unchanged) and PUT `{ state, baseRev, day }`. A Lua script saves only if the cloud is still at `baseRev`; otherwise 409 with the current copy. The route checks the session itself as well as the proxy.
 - The phone keeps `mycalorie:sync` (`rev`, `dirty`, `replace`, `syncedAt`). It syncs on open, 1.2 s after each change (`onRealDataChange` in `store.ts`), on returning to the front, and on coming back online. A clean phone takes a newer cloud copy (`writeRealState`); a phone with unsent changes merges by id (its own version wins) and sends the result. A meal deleted on one device while another was offline with changes can come back. A backup restore is sent as is, replacing the cloud copy.
 - Demo data never syncs. Comparison photos stay on the phone.
-- Tested end to end against a stand-in Upstash server (`.local-test/`, git-ignored), not yet against real Upstash.
+- Redis is reached through `REDIS_URL` with the `redis` package (one connection per warm function, 6 s command timeout), or through Upstash's REST API when the `KV_REST_API_*` pair is set.
+- Tested end to end (two devices, merge, outage and recovery, restore) against Redis 7 in Docker and a stand-in Upstash REST server; harness in `.local-test/` (git-ignored).
 
 **Backups (`src/lib/backup.ts`, `src/components/Backup.tsx`):**
 - A backup is `mycalorie-backup-YYYY-MM-DD.json`: `{ app: "mycalorie", version: 1, exportedAt, data: AppState }`, the real data only (regular photos included, comparison photos not). It goes to the share sheet (Save to Files) via `src/lib/share-file.ts`, or downloads where sharing isn't available.

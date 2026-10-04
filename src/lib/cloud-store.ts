@@ -1,9 +1,11 @@
 import "server-only";
+import { createClient } from "redis";
 import { isAppState } from "./app-state-check";
 import type { AppState } from "./types";
 
 /**
- * The cloud copy of the app's data, in Upstash Redis over its REST API. One key holds the whole state
+ * The cloud copy of the app's data, in Redis: over Upstash's REST API, or a direct connection from a
+ * `REDIS_URL` (what Vercel's Redis integration provides). One key holds the whole state
  * as JSON and another its revision, so a phone holding an older copy can't overwrite a newer one.
  * Each write also keeps that day's last state for 30 days, as a way back from a bad overwrite.
  */
@@ -13,18 +15,63 @@ const REV_KEY = "mycalorie:rev";
 const SNAPSHOT_PREFIX = "mycalorie:snapshot:";
 const SNAPSHOT_SECONDS = 60 * 60 * 24 * 30;
 
-/** Vercel's Upstash integration names these KV_REST_API_*; a direct Upstash setup names them UPSTASH_REDIS_REST_*. */
-function redisConfig(): { url: string; token: string } | null {
-  const url = (process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL)?.trim();
-  const token = (process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN)?.trim();
-  return url && token ? { url, token } : null;
+type Backend = { kind: "rest"; url: string; token: string } | { kind: "tcp"; url: string };
+
+/**
+ * Vercel's Upstash integration sets KV_REST_API_*, a direct Upstash setup UPSTASH_REDIS_REST_*, and
+ * Vercel's Redis integration REDIS_URL. The REST pair wins when both kinds are present.
+ */
+function backend(): Backend | null {
+  const restUrl = (process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL)?.trim();
+  const restToken = (process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN)?.trim();
+  if (restUrl && restToken) return { kind: "rest", url: restUrl, token: restToken };
+  const url = process.env.REDIS_URL?.trim();
+  return url ? { kind: "tcp", url } : null;
 }
 
-export const cloudConfigured = () => redisConfig() !== null;
+export const cloudConfigured = () => backend() !== null;
 
-async function redis<T>(command: (string | number)[]): Promise<T> {
-  const config = redisConfig();
+type Command = (string | number)[];
+
+async function redis<T>(command: Command): Promise<T> {
+  const config = backend();
   if (!config) throw new Error("Redis is not configured");
+  return config.kind === "rest" ? viaRest<T>(config, command) : viaConnection<T>(config.url, command);
+}
+
+/** One connection per warm function instance, opened on first use and reopened after a failure. */
+let connection: Promise<{ sendCommand(args: string[]): Promise<unknown> }> | null = null;
+
+function connect(url: string) {
+  connection ??= (async () => {
+    const client = createClient({ url, socket: { connectTimeout: 5000 } });
+    client.on("error", (error) => console.error("redis connection", error));
+    await client.connect();
+    return client;
+  })().catch((error) => {
+    connection = null;
+    throw error;
+  });
+  return connection;
+}
+
+const COMMAND_TIMEOUT_MS = 6000;
+
+/** A stalled connection would otherwise hold the request until the function times out. */
+async function viaConnection<T>(url: string, command: Command): Promise<T> {
+  const client = await connect(url);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`redis ${command[0]} timed out`)), COMMAND_TIMEOUT_MS);
+  });
+  try {
+    return (await Promise.race([client.sendCommand(command.map(String)), timeout])) as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function viaRest<T>(config: { url: string; token: string }, command: Command): Promise<T> {
   const response = await fetch(config.url, {
     method: "POST",
     headers: { Authorization: `Bearer ${config.token}`, "Content-Type": "application/json" },
