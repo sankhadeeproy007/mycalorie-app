@@ -262,6 +262,9 @@ export function HomeScreen({ userId }: { userId: string }) {
     setNotice({ key: `rm-${log.id}`, message: `removed ${log.name}`, undo: () => restoreLog(log) });
   };
 
+  const claudeFirst = (state?.settings.readWith ?? "claude") === "claude";
+  const chooseClaudeFirst = (on: boolean) => setReadWith(on ? "claude" : "gemini");
+
   const hasData = Boolean(state && (state.logs.length > 0 || state.saved.length > 0));
   const remaining = view?.targets.protein ? Math.max(0, view.targets.protein - view.totals.protein) : null;
 
@@ -305,8 +308,8 @@ export function HomeScreen({ userId }: { userId: string }) {
             <EatenToday logs={view.todaysLogs} onRemove={removeFromToday} onSaveToRegulars={addToRegulars} onEdit={editLog} />
             {owner && (
               <ComparisonPanel
-                claudeFirst={(state?.settings.readWith ?? "claude") === "claude"}
-                onClaudeFirst={(on) => setReadWith(on ? "claude" : "gemini")}
+                claudeFirst={claudeFirst}
+                onClaudeFirst={chooseClaudeFirst}
                 enabled={Boolean(state?.settings.keepForComparison)}
                 onToggle={setKeepForComparison}
                 revision={comparisonRevision}
@@ -315,6 +318,7 @@ export function HomeScreen({ userId }: { userId: string }) {
             <BackupPanel today={today} demo={isDemo()} hasData={hasData} onNotice={notify} />
             {(developerShown || isDemo()) && (
               <DeveloperPanel
+                claudeFirst={owner ? { on: claudeFirst, onChange: chooseClaudeFirst } : undefined}
                 logs={state?.logs ?? []}
                 targets={state?.settings.targets ?? NO_TARGETS}
                 demo={isDemo()}

@@ -15,6 +15,8 @@ type DeveloperPanelProps = {
   logs: MealLog[];
   targets: Targets;
   demo: boolean;
+  /** The owner's "Read meals with Claude Sonnet" setting; omitted for everyone else. */
+  claudeFirst?: { on: boolean; onChange: (on: boolean) => void };
   onDemoChange: (on: boolean) => void;
   onResetDemo: () => void;
   /** Turns demo data off and tucks the panel away again. */
@@ -22,7 +24,7 @@ type DeveloperPanelProps = {
 };
 
 /** Testing aids. Demo data lives in its own storage, so real logs are never touched. */
-export function DeveloperPanel({ logs, targets, demo, onDemoChange, onResetDemo, onHide }: DeveloperPanelProps) {
+export function DeveloperPanel({ logs, targets, demo, claudeFirst, onDemoChange, onResetDemo, onHide }: DeveloperPanelProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [exportNote, setExportNote] = useState<string | null>(null);
 
@@ -70,6 +72,21 @@ export function DeveloperPanel({ logs, targets, demo, onDemoChange, onResetDemo,
           <RotateCcw size={15} strokeWidth={2} aria-hidden="true" />
           {confirmingReset ? "Tap again to reset demo data" : "Reset demo data"}
         </button>
+      )}
+
+      {claudeFirst && (
+        <div className={styles.setting}>
+          <SwitchRow
+            label="Read meals with Claude Sonnet"
+            hint={
+              claudeFirst.on
+                ? "Claude reads photos and descriptions first (about 2¢ a photo); free Gemini takes over if it can’t answer."
+                : "Free Gemini reads meals first; Claude is one tap away on each photo."
+            }
+            on={claudeFirst.on}
+            onChange={claudeFirst.onChange}
+          />
+        </div>
       )}
 
       <section className={styles.export} aria-labelledby="export-heading">

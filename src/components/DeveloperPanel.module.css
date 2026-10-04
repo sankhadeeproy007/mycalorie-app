@@ -100,3 +100,7 @@
   font-size: 0.75rem;
   overflow-wrap: anywhere;
 }
+
+.setting {
+  margin-top: 12px;
+}
