@@ -7,7 +7,7 @@ Last updated: 2026-10-04. Start here when picking the project back up. PRODUCT.m
 A personal, single-user meal tracker for Indian food, used as an installed web app on the owner's iPhone. You photograph a meal, or describe it or type it in. Gemini estimates the items in Indian household measures, you correct them, and the meal counts toward daily targets for protein, calories, carbs and fat. Protein is the main number. On top of that sits adult gamification: a day score, a protein streak with a 12-week graph, and milestones. Repeat meals (regulars) log in one tap.
 
 - **Live:** deployed on Vercel behind an access code. The address is kept out of the repo.
-- **Repo:** https://github.com/sankhadeeproy007/mycalorie-app (private). Pushing to `main` deploys on Vercel automatically.
+- **Repo:** https://github.com/sankhadeeproy007/mycalorie-app (public; commits use the GitHub noreply email set in this repo's git config, and the live URL and personal targets are kept out of the repo). Pushing to `main` deploys on Vercel automatically.
 - **Hard constraints:**
   - Zero running cost: Gemini free tier, Vercel Hobby. The owner's budget is at most $2–3/month if it ever moves to a paid model.
   - Single user, no accounts.
