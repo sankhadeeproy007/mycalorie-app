@@ -1,180 +1,282 @@
 # Mycalorie: project status and handoff
 
-Last updated: 2026-10-04. Start here when picking the project back up. PRODUCT.md holds the product decisions and DESIGN.md the visual system; this file covers what's built, how it fits together, what's pending, and how to work on it.
+Last updated: 2026-10-05. Start here when picking the project back up.
+- **PRODUCT.md:** the product decisions.
+- **DESIGN.md:** the visual system.
+- **This file:** what's built, how it fits together, what's pending, and how to work on it.
 
 ## What it is
 
-A personal, single-user meal tracker for Indian food, used as an installed web app on the owner's iPhone. You photograph a meal, or describe it or type it in. Gemini estimates the items in Indian household measures, you correct them, and the meal counts toward daily targets for protein, calories, carbs and fat. Protein is the main number. On top of that sits adult gamification: a day score, a protein streak with a 12-week graph, and milestones. Repeat meals (regulars) log in one tap.
+A meal tracker for Indian food, used as an installed web app on the owner's iPhone, with room for a few invited people.
+- **Logging:** you photograph a meal, or describe it or type it in. An AI estimates the items in Indian household measures, you correct them, and the meal counts toward daily targets for protein, calories, carbs and fat. Protein is the main number.
+- **Regulars:** repeat meals log in one tap, with no AI involved.
+- **Gamification:** adult-style, with a day score, a protein streak with a 12-week graph, and milestones.
+- **AI:** for the owner, Claude Sonnet 5.5 reads meals first, with free Gemini as the automatic fallback and a one-tap second opinion. Everyone else uses Gemini.
 
-- **Live:** deployed on Vercel behind an access code. The address is kept out of the repo.
-- **Repo:** https://github.com/sankhadeeproy007/mycalorie-app (public; commits use the GitHub noreply email set in this repo's git config, and the live URL and personal targets are kept out of the repo). Pushing to `main` deploys on Vercel automatically.
-- **Hard constraints:**
-  - Zero running cost: Gemini free tier, Vercel Hobby. The owner's budget is at most $2–3/month if it ever moves to a paid model.
-  - Single user, no accounts.
-  - Mature look: the owner rejected a cartoonish design.
+**Live:** deployed on Vercel behind per-person access codes.
+- The address is kept out of the repo.
+- Vercel project `mycalorie-app`, functions in `iad1`.
+- A free Redis database is connected through Vercel's Storage integration (it sets `REDIS_URL`).
+
+**Repo:** https://github.com/sankhadeeproy007/mycalorie-app.
+- Public, so commits use the GitHub noreply email set in this repo's git config.
+- The live URL, personal targets and any keys stay out of the repo.
+- Pushing to `main` deploys on Vercel automatically.
+
+**Constraints:**
+- Free tiers for everything except Claude. Claude is the owner's only spend: $2–3 a month at most, used only for new meals.
+- Each person's data is separate. Claude and the model comparison are owner-only.
+- Mature look: the owner rejected a cartoonish design.
 
 ## Owner context and preferences
 
-- Lives in India and eats mostly Indian food. Dishes, portions (katori, roti count, ladle) and nutrition use Indian conventions (IFCT 2017), with en-IN number grouping.
-- **Daily targets:** all four (protein, calories, carbs, fat) are set in the app and add up at 4/4/9. The numbers are kept out of the repo.
-- **Look:** the "Console" design was picked from 5 mockups, after the earlier hand-drawn "Prep Shelf" look was rejected as childish. No mascots, confetti or guilt cues.
+- **Food:** lives in India and eats mostly Indian food. Dishes, portions (katori, roti count, ladle) and nutrition follow Indian conventions (IFCT 2017), with en-IN number grouping.
+- **Daily targets:** all four are set in the app and add up at 4/4/9. The numbers are kept out of the repo.
+- **Look:** the "Console" design was picked from 5 mockups, after the hand-drawn "Prep Shelf" look was rejected as childish. No mascots, confetti or guilt cues.
 - **Mockups first:** show options before big visual changes.
 - **Gamification:** streaks, day score and milestones are wanted. Levels/XP were not chosen.
+- **AI:** prefers Claude Sonnet's answers to Gemini's (2026-10-05), so Sonnet is the default reader for the owner. Opus was judged too expensive for the budget.
+- **Developer-only controls** live in the hidden developer panel (5 taps on the date): demo data, the Claude switch, and CSV export.
 
 ## Stack
 
-- Next.js 16.3 (App Router, TypeScript, CSS modules), React 19. Next 16 renames middleware to **`src/proxy.ts`**. Read `node_modules/next/dist/docs/` before using unfamiliar Next APIs (see AGENTS.md).
-- Fonts: Geist and Geist Mono via `next/font`. Icons: `lucide-react`.
-- AI: **Gemini** (`gemini-flash-latest` by default; override with `GEMINI_MODEL`) through REST with a JSON response schema.
-- Data: **browser storage only** for now. App state lives in `localStorage`; comparison photos live in IndexedDB.
-- Dev tools: `tsx` and `@anthropic-ai/sdk`, both used only by the comparison script.
+- **Framework:**
+  - Next.js 16.3 (App Router, TypeScript, CSS modules) and React 19.
+  - Next 16 renames middleware to **`src/proxy.ts`**.
+  - Read `node_modules/next/dist/docs/` before using unfamiliar Next APIs (see AGENTS.md).
+- **UI:** Geist and Geist Mono via `next/font`; icons from `lucide-react`.
+- **AI:**
+  - **Claude Sonnet 5.5** (`claude-sonnet-5-5`) via the official `@anthropic-ai/sdk`.
+  - **Gemini** (`gemini-flash-latest` by default, `GEMINI_MODEL` to override) via REST with a JSON response schema.
+  - Both use the same prompts and schemas (`src/lib/meal-prompt.ts`).
+- **Data:**
+  - Browser storage (`localStorage`) is the working copy, mirrored to **Redis** through `/api/data`.
+  - Redis is reached via `REDIS_URL` with the `redis` package, or Upstash REST if the `KV_REST_API_*` variables are set.
+  - Comparison photos stay in IndexedDB on the phone.
+- **Dev:** `tsx` runs the comparison script. The local test harness lives in `.local-test/` (git-ignored); see "Working on it".
 
 ## Environment variables
 
-On Vercel (Project → Settings → Environment Variables; **redeploy after changing any of them**), and in `.env.local` for local work:
+Set these on Vercel (Project → Settings → Environment Variables) and in `.env.local` for local work. **Redeploy after changing any of them.**
 
 | Variable | Purpose |
 |---|---|
 | `GEMINI_API_KEY` | Google AI Studio key, free tier. Never enable billing, or the free allowance ends. |
-| `GEMINI_MODEL` | Optional model override. |
-| `ACCESS_CODE` | 4–8 digits for the unlock screen. Changing it signs every device out. |
-| `ACCESS_CODES` | Other people: `name:code,name:code`, codes the same length as `ACCESS_CODE`. Malformed entries are skipped with a log warning. |
-| `SESSION_SECRET` | Random string that signs the session cookie (`openssl rand -hex 32`). |
-| `ANTHROPIC_API_KEY` | Claude for Claude in the app (Production on Vercel), and for `npm run compare` locally. Without it the button says Claude isn't set up. |
-| `CLAUDE_EFFORT` | Optional: `low` (default), `medium` or `high` for "Try Claude". |
-| `REDIS_URL` | Cloud sync over a direct Redis connection; set by the Redis integration connected on Vercel (this is what production uses). |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Alternative: Upstash's REST API (`UPSTASH_REDIS_REST_URL` / `_TOKEN` also work); wins over `REDIS_URL` when set. With neither, sync is off. |
-| `MOCK_GEMINI=1` | Development only: canned AI answers so the screens work without a key. |
+| `GEMINI_MODEL` | Optional Gemini model override. |
+| `ANTHROPIC_API_KEY` | Claude for the owner (Production). Needs **API credit** from platform.claude.com → Billing; claude.ai plan credit doesn't apply. Without credit, Claude fails and Gemini answers. |
+| `CLAUDE_EFFORT` | Optional: `low` (default), `medium` or `high`. |
+| `ACCESS_CODE` | The owner's code, 4–8 digits. |
+| `ACCESS_CODES` | Other people: `name:code,name:code`, with lower-case names and codes the same length as `ACCESS_CODE`. Malformed entries are skipped with a log warning. |
+| `SESSION_SECRET` | Random string that signs session cookies (`openssl rand -hex 32`). |
+| `REDIS_URL` | Cloud sync over a direct Redis connection; set by Vercel's Redis integration. This is what production uses. |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Alternative: Upstash's REST API (`UPSTASH_REDIS_REST_*` also works). Wins over `REDIS_URL` when set. With neither, sync is off. |
+| `MOCK_GEMINI=1` | Development only: canned answers for both Gemini and Claude, so the screens work without keys. |
+
+Production currently has `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `ACCESS_CODE`, `SESSION_SECRET` and `REDIS_URL`. `ACCESS_CODES` is not set yet.
 
 ## What's built
 
-**Home screen** (`src/app/HomeScreen.tsx`), in the Console design: graphite panels, hairline seams, mono figures.
+### Home screen (`src/app/HomeScreen.tsx`)
+
+In the Console design: graphite panels, hairline seams, mono figures. From the top:
 - **Launch screen:** the 4×4 logo lights up in a wave, then fades. It's in the server HTML, so it shows instead of a blank screen.
-- **Status line:** the date on the left; on the right, a drawn status dot (a ring while today is open) with "18d streak", or "18d streak · hit". Tapping the date 5 times within 2.5 s reveals the developer panel.
-- **Backup prompt:** at the top on the first open of each day, until acted on: "Back up today" with Save backup / Not today. It's skipped on a day that already has a backup, never shows in demo mode, and stays away while cloud sync is working (it returns when sync is off, offline or failing). On a fresh install with no data it offers "Restore a backup?" instead.
-- **Protein panel:** "N g to go" (or "+N g past target"), a bar, and kcal/carbs/fat rows showing what's left and the target. The sliders icon opens the targets sheet.
+- **Status line:** the date on the left, which reveals the developer panel after 5 taps within 2.5 s. On the right, a drawn status dot (a ring while today is open) with "18d streak", or "18d streak · hit".
+- **Backup prompt:** at the top on the first open of each day, until acted on, but only while cloud sync isn't working (off, offline or failing). It offers "Back up today", or "Restore a backup?" on a fresh install with no data.
+- **Protein panel:** "N g to go" (or "+N g past target"), a bar, and kcal/carbs/fat rows. The sliders icon opens the **targets sheet**: protein (required), calories, carbs and fat, with "Use N kcal" suggested from 4/4/9.
 - **Day score panel:** "N so far", 7 past days plus today (outlined) on one 0–100 scale, and the 7-day average as a dashed line.
-- **Streak panel:**
-  - A 12-week contribution graph in a protein-blue ramp, with a legend (none / under / hit).
-  - Tapping anywhere on it opens the nearest day in the **day sheet**: read-only totals against targets, the score, and meals with their items, with ‹ › to step between days. Tapping a meal opens it in **Edit meal**; closing that sheet returns to the day.
-- **Regulars:** photo tiles. A tap logs 1×. The "1×" tab opens the portion picker (½, 1, 1½, 2) plus a pencil (**edit regular**) and "adjust before logging". Edit regular reopens it in the meal sheet: rename, change items, Save changes, or Remove from regulars (with undo, which also relinks past logs). A product is edited as its per-serving label values; `per100` is rescaled to match. Tapping the panel header folds it to just the header and count; the choice is remembered on the phone.
-- **Reading with Claude Sonnet (owner's default):** for the owner, photos and descriptions go to Claude Sonnet 5.5 first; if Claude fails (no API credit, rate limit), Gemini answers automatically and the switch shows why Claude didn't. "Read meals with Claude Sonnet" in the developer panel (`settings.readWith`, default `claude`) puts Gemini first instead. Other people always use Gemini. Regulars never call either.
-- **Gemini | Claude switch:** after a photo is read, the switch sits under the sheet header, the preferred AI first. "Try Gemini" / "Try Claude ~2¢" asks the other one about the same photo; the Claude call is Claude Sonnet 5.5 (`src/lib/providers/claude.ts`, official SDK, effort `low`, structured output, server-side refusal fallback `"default"`); its answer opens as a second review with its own edits, and the switch flips between them. The cost of each Claude answer shows on the switch. If Gemini fails, the same switch offers Claude instead. A kept comparison sample records Claude's answer (`claudeEstimate`) and which answer was logged (`chosen`). `MOCK_GEMINI=1` mocks both.
-- **Item numbers:** in every meal sheet, each item shows protein · kcal with a pencil; tapping opens four fields to correct its numbers for the amount shown. That sets the item's base to the corrected values, so stepping the quantity scales from them (`ItemRow.tsx`).
-- **Today:** the meal list, with save-to-regulars and remove (with undo). Tapping a meal opens **Edit meal**: the meal sheet with its items as eaten (or its totals, for a meal typed as numbers), Save changes, and Delete meal (with undo). Time, day and portion stay as logged. Saving also updates that meal's kept comparison sample (`updateSampleForLog`), so the comparison scores against the corrected numbers.
-- **Model comparison panel:** the "Keep meal photos for comparison" switch, a count, Export and Clear.
-- **Sync & backup panel:** folds like regulars (`useFolded`, key `mycalorie:backup-collapsed`); it starts folded to its status line unless sync is off. With sync set up, the sync state (synced / syncing / offline / sync failed, last synced time) and the last backup file; without it, "backup" with the last backup date. Back up now and Restore either way.
-- **Developer panel (hidden, 5 taps on the date):** a "Demo data" switch, "Reset demo data", "hide", the owner's "Read meals with Claude Sonnet" switch, and **Export**: two CSVs (with a UTF-8 BOM for Excel) via the share sheet: `mycalorie-meals-<day>.csv` (date, time, meal, portion, macros, items) and `mycalorie-daily-<day>.csv` (per-day totals, meal count, today's targets, score). It exports what's on screen, so demo data while demo is on (`src/lib/export-csv.ts`).
-- **Dock:** "Log a meal" and "Type" (describe it, or enter numbers). With regulars saved, "Log a meal" opens the **log sheet** (`LogSheet.tsx`): Photo and Describe, then the regulars in shelf order (time of day first); a tap logs 1×, the sliders icon opens "adjust before logging", and a filter appears past 8 regulars. With no regulars it opens the camera directly.
+- **Streak panel:** a 12-week graph in a protein-blue ramp, with a legend (none / under / hit).
+  - Tapping it opens the nearest day in the **day sheet**: totals against targets, the score, and that day's meals with their items, with ‹ › to step between days.
+  - Tapping a meal there opens **Edit meal**; closing it returns to the day.
+- **Regulars:** photo tiles, and the panel folds from its header.
+  - A tap logs 1×.
+  - The "1×" tab opens the portion picker (½, 1, 1½, 2), plus a pencil (**edit regular**) and sliders (**adjust before logging**).
+  - **Edit regular:** rename, change items, Save changes, or Remove from regulars with undo (undo also relinks past logs). A product is edited as its per-serving label values, and `per100` is rescaled to match.
+- **Today:** the meal list, with save-to-regulars and remove (with undo).
+  - Tapping a meal opens **Edit meal**: its items as eaten (or its totals, for a meal typed as numbers), Save changes, and Delete meal (with undo). Time, day and portion stay as logged.
+  - Saving also updates that meal's kept comparison sample.
+- **Model comparison panel (owner only):** the "Keep meal photos for comparison" switch, a count, Export (JSON) and Clear.
+- **Sync & backup panel:** starts folded to its status line while sync is on.
+  - Opened, it shows the sync state (synced / syncing / offline / sync failed), the last sync time, and the last backup file.
+  - Without sync it's titled "backup". Back up now and Restore are always there.
+- **Developer panel (hidden):**
+  - "Demo data" switch and "Reset demo data".
+  - The owner's **"Read meals with Claude Sonnet"** switch.
+  - **Export your data:** Meals CSV and Daily totals CSV.
+  - "hide".
+- **Dock:** "Log a meal" and "Type".
+  - With regulars saved, "Log a meal" opens the **log sheet** (`LogSheet.tsx`): Photo and Describe, then the regulars in shelf order (time of day first). A tap logs 1×, sliders opens "adjust before logging", and a filter appears past 8 regulars.
+  - With no regulars it opens the camera directly.
 
-**Meal sheet** (`src/components/meal/`). It moves through stages: compose → reading → review, or label.
+### Meal sheet (`src/components/meal/`)
+
+Stages: compose → reading → review, or label.
 - **Compose:**
-  - Photo, optional hint, and the **Outside food** switch (restaurant oil and portions).
-  - With **Type**, a description field instead, plus "Enter numbers instead".
+  - Photo, optional hint, and the **Outside food** switch.
+  - With Type, a description field instead, plus "Enter numbers instead".
+- **Reading with the preferred AI:**
+  - For the owner, Claude Sonnet first (`settings.readWith`, default `claude`). If it fails, Gemini is asked automatically.
+  - Descriptions follow the same rule (`estimateDescription` in `meal-api.ts`).
+  - Everyone else uses Gemini.
+- **Claude | Gemini switch** (`ModelToggle.tsx`, owner only): under the sheet header, preferred AI first.
+  - "Try Gemini free" / "Try Claude ~2¢" asks the other AI about the same photo.
+  - Each answer is its own review with its own edits, and flipping keeps them.
+  - The Claude side shows the actual cost (e.g. "1.9¢").
+  - A failed side shows "Retry …" and the reason, e.g. "API credit may be used up".
 - **Review:**
-  - **Items:** each item has a − value unit + stepper: ½ steps, ½ tsp for oil and ghee, 25 g by weight, and a g/ml toggle where the weight is known. Items the AI is unsure of are marked **check** and shown first. Items can be removed.
-  - **+ add:** pick from regulars and products, or describe something to add (text estimate).
+  - **Items:** a − value unit + stepper per item (½ steps, ½ tsp for oil and ghee, 25 g by weight, a g/ml toggle where weight is known). Items the AI is unsure of are marked **check** and shown first. Items can be removed.
+  - **Item numbers** (`ItemRow.tsx`): each item shows "protein g · kcal ✎". Tapping it edits all four numbers for the amount shown. This sets the item's base to the corrected values, so later quantity changes scale from them.
+  - **+ add:** regulars and products, or a described extra (an AI estimate).
   - **Matched regular:** a "Log that instead" banner.
-  - **Totals:** shown live, and editable directly.
+  - **Totals:** live, with "Edit totals" to type over them.
   - **Save to regulars:** keeps all the items and a small photo.
-- **Label:** a nutrition-label photo is read exactly: product name, values per serving and per 100 g, a servings stepper. It's saved as a **product**, which is a regular with `product` info, usable as an ingredient.
-- **Adjust before logging:** opens a regular's items for a one-off change.
+- **Label:** a nutrition-label photo is read exactly: product name, values per serving and per 100 g, and a servings stepper. It's saved as a **product** (a regular with `product` info), usable as an ingredient.
+- **Other modes** reuse the same review:
+  - adjust before logging (a one-off change to a regular);
+  - edit regular;
+  - edit meal.
 
-**Targets sheet:** protein (required), calories, carbs and fat. When P/C/F are all filled it suggests the calorie total (4/4/9) with "Use N kcal".
+### AI (`src/lib/`)
 
-**AI** (`src/lib/meal-prompt.ts` holds the shared instructions, schema and clean-up; `src/lib/providers/gemini.ts` makes the call):
-- **Photo:** returns `meal`, `label` or `not_food`.
-- **Item rules:**
-  - Indian dish names and household units.
-  - Grams per item, with a liquid flag.
-  - Oil/ghee as its own tsp item.
-  - `uncertain` for hidden quantities.
-- **Bones:** for bone-in meat and fish, only the edible meat counts (leg/thigh ~30% bone, drumstick ~35%, mutton piece ~30%, fish ~40%), and the cut is named.
-- **Regulars:** the owner's regulars are sent along so a photo can match one.
-- **Text estimates:** a separate endpoint takes a description.
-- **Routes:** `/api/analyze` and `/api/estimate`. Errors map to `not_configured`, `quota`, `unreadable`, `upstream`, and the UI falls back to manual entry.
+- **Shared:** `meal-prompt.ts` holds the instructions, JSON schemas, and clean-up for both models.
+  - **Photo answers** are `meal`, `label` or `not_food`.
+  - **Item rules:** Indian dish names and household units; grams per item with a liquid flag; oil/ghee as its own tsp item; `uncertain` for hidden quantities.
+  - **Bones:** for bone-in meat and fish, only the edible meat counts (leg/thigh ~30% bone, drumstick ~35%, mutton piece ~30%, fish ~40%), and the cut is named.
+  - **Regulars:** the person's regulars are sent along so a photo can match one.
+- **Claude:** `providers/claude.ts`.
+  - Sonnet 5.5, effort `low`, structured output (`output_config.format`).
+  - Server-side refusal fallback (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`).
+  - Reports cost from usage at $2/$10 per million input/output tokens.
+  - Out of API credit becomes the "quota" error.
+- **Gemini:** `providers/gemini.ts`, REST with `toGeminiSchema`.
+- **Routes:** `/api/analyze` (photo, body `model`) and `/api/estimate` (description, body `model`).
+  - Both return 403 for Claude unless the caller is the owner (`mayUseClaude` in `session.ts`).
+  - Errors map to `not_configured`, `quota`, `unreadable` and `upstream`, each with a short `detail` shown in the UI.
 
-**Access lock:**
-- **Proxy:** `src/proxy.ts` gates everything except `/unlock`, `/api/unlock` and the icons/manifest.
-- **Unlock route:** `/api/unlock` checks `ACCESS_CODE` timing-safely, sets an HMAC session cookie for 180 days, adds a 700 ms delay on wrong codes, and locks out after 5 failures for 15 min (in memory, so best-effort on serverless).
+### People and access (`src/lib/access.ts`, `session.ts`, `current-user.ts`, `users.ts`)
+
+- **Codes:** the owner signs in with `ACCESS_CODE`; others come from `ACCESS_CODES`.
+- **Gating:** `src/proxy.ts` gates everything except `/unlock`, `/api/unlock` and the icons/manifest.
+- **Unlock** (`/api/unlock`):
+  - finds whose code it is (comparing every code timing-safely);
+  - sets a 180-day cookie `<user>.<HMAC of user and code>`;
+  - waits 700 ms after a wrong code, and locks out after 5 failures for 15 minutes (in memory, so best-effort on serverless).
+  - The owner's older cookies (an HMAC of the code alone) are still accepted.
 - **Defaults:** with no code set the app is open in development and closed in production.
+- **Per-person storage:** the home page reads the session per request and passes the user to `HomeScreen`, which calls `setCurrentUser` before anything reads storage.
+  - The owner keeps the original keys: `mycalorie:v1`, `mycalorie:sync` and `mycalorie:backup` in the browser; `mycalorie:state`, `mycalorie:rev` and `mycalorie:snapshot:*` in Redis.
+  - Others get `…:<user>` in the browser and `mycalorie:u:<user>:…` in Redis.
+  - Demo data and device preferences (folded panels, developer flag) are shared per device.
 
-**Phone polish:**
-- Fields are ≥16px, so iOS doesn't zoom on focus.
-- `ViewportSync` publishes `--keyboard-inset` and `--visual-height`, so sheets sit above the keyboard. Return keys go next/done/go, ignoring keyboards that are still composing.
-- When installed, the top keeps at least 54px clear of the status bar (`--top-inset`). Installed mode is detected two ways: the `display-mode: standalone` media query, and `data-standalone`, which ViewportSync sets from `navigator.standalone`. A solid strip (`body::before`) sits behind the status bar so scrolled content slides under it.
-- While any sheet is open the page behind it is frozen (`src/lib/scroll-lock.ts` pins the body), because iOS otherwise scrolls the page under a modal dialog. Closing restores the exact scroll position.
-- PWA manifest and generated icons (`icon.tsx`, `apple-icon.tsx`).
+### Cloud sync (`src/lib/sync.ts`, `src/app/api/data/route.ts`, `src/lib/cloud-store.ts`)
 
-**Model comparison:**
-- **In the app:** with the switch on, each logged photo is kept with its hint, the Outside setting, Gemini's first answer and what was finally logged. Export shares one JSON file. Demo meals are never kept, and undoing a log drops its photo.
-- **On the Mac:** `npm run compare -- --from <export.json>` re-sends each photo to Gemini Flash and Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5 (effort `low` by default). It scores each model against what was logged, adds a column for the app's original Gemini answer, measures real cost per photo, and writes `compare/report-*.html`. It asks before spending. `compare/` is git-ignored.
+- **Redis contents:** `…state` (`{ state, updatedAt }`), `…rev`, and `…snapshot:YYYY-MM-DD` (that day's last state, kept 30 days as a way back from a bad overwrite).
+- **`/api/data`:**
+  - GET; `?have=<rev>` skips sending the state when it's unchanged.
+  - PUT `{ state, baseRev, day }`. A Lua script saves only if the cloud is still at `baseRev`; otherwise it returns 409 with the current copy.
+  - The route checks the session itself as well as relying on the proxy.
+- **On the phone:**
+  - `…sync` holds `rev`, `dirty`, `replace` and `syncedAt`.
+  - It syncs on open, 1.2 s after each change (`onRealDataChange` in `store.ts`), on returning to the front, and on coming back online.
+- **Resolving differences:**
+  - A phone with no unsent changes takes a newer cloud copy.
+  - A phone with unsent changes merges meals and regulars by id (its own version wins) and sends the result.
+  - **Settings:** carry `changedAt`, stamped by every settings setter, and the newer settings win. Between two unstamped copies, a set of targets beats none. This fixed a bug where a second copy with no targets, such as a Safari tab, blanked targets everywhere.
+  - A backup restore is sent as is, replacing the cloud copy.
+  - Known gap: a meal deleted on one device while another was offline with changes can come back.
+- **Connection:** `REDIS_URL` uses one connection per warm function instance, with a 6 s command timeout.
+- **Not synced:** demo data and comparison photos.
 
-**Cloud sync (`src/lib/sync.ts`, `src/app/api/data/route.ts`, `src/lib/cloud-store.ts`):**
-- The phone's localStorage stays the working copy. Redis holds `mycalorie:state` (`{ state, updatedAt }`), `mycalorie:rev`, and `mycalorie:snapshot:YYYY-MM-DD` (that day's last state, kept 30 days).
-- `/api/data`: GET (`?have=<rev>` skips the state when unchanged) and PUT `{ state, baseRev, day }`. A Lua script saves only if the cloud is still at `baseRev`; otherwise 409 with the current copy. The route checks the session itself as well as the proxy.
-- The phone keeps `mycalorie:sync` (`rev`, `dirty`, `replace`, `syncedAt`). It syncs on open, 1.2 s after each change (`onRealDataChange` in `store.ts`), on returning to the front, and on coming back online. A clean phone takes a newer cloud copy (`writeRealState`); a phone with unsent changes merges by id (its own version wins) and sends the result. Settings carry `changedAt` (stamped by every settings setter); the merge keeps the newer settings, and between two unstamped copies a set of targets beats none. Before this, a second copy with no targets (a Safari tab, say) could blank the targets everywhere. A meal deleted on one device while another was offline with changes can come back. A backup restore is sent as is, replacing the cloud copy.
-- Demo data never syncs. Comparison photos stay on the phone.
-- Redis is reached through `REDIS_URL` with the `redis` package (one connection per warm function, 6 s command timeout), or through Upstash's REST API when the `KV_REST_API_*` pair is set.
-- Tested end to end (two devices, merge, outage and recovery, restore) against Redis 7 in Docker and a stand-in Upstash REST server; harness in `.local-test/` (git-ignored).
+### Backups and export
 
-**Backups (`src/lib/backup.ts`, `src/components/Backup.tsx`):**
-- A backup is `mycalorie-backup-YYYY-MM-DD.json`: `{ app: "mycalorie", version: 1, exportedAt, data: AppState }`, the real data only (regular photos included, comparison photos not). It goes to the share sheet (Save to Files) via `src/lib/share-file.ts`, or downloads where sharing isn't available.
-- Restore validates the file, shows its date and counts, and replaces all real data after a confirm. A bad file shows an error. Restore and backup are off in demo mode.
-- Status lives in `mycalorie:backup` (`lastAt`, `dismissedDay`). A restore records the file's own date as the last backup.
+- **Backup file** (`src/lib/backup.ts`, `src/components/Backup.tsx`): `mycalorie-backup-YYYY-MM-DD.json` = `{ app: "mycalorie", version: 1, exportedAt, data: AppState }`.
+  - Real data only: regular photos are included, comparison photos aren't.
+  - Shared through the share sheet (`src/lib/share-file.ts`).
+  - Restore validates the file (`app-state-check.ts`), shows its date and counts, and replaces everything after a confirm.
+  - Status lives in `…backup` (`lastAt`, `dismissedDay`).
+- **CSV export** (`src/lib/export-csv.ts`, developer panel). Both files have a UTF-8 BOM so Excel reads ½ correctly, and both go through the share sheet. The panel exports what's on screen, so demo data while demo is on.
+  - `mycalorie-meals-<day>.csv`: date, time, meal, portion, macros, items.
+  - `mycalorie-daily-<day>.csv`: per-day totals, meal count, today's targets, score.
 
-**People (`src/lib/access.ts`, `src/lib/session.ts`, `src/lib/current-user.ts`):**
-- The owner signs in with `ACCESS_CODE`; others come from `ACCESS_CODES`. The session cookie is `<user>.<HMAC of user and code>`; the owner's older cookies (an HMAC of the code alone) are still accepted.
-- The home page reads the session per request and passes the user to `HomeScreen`, which calls `setCurrentUser` before anything reads storage. The owner keeps the original keys (`mycalorie:v1`, `mycalorie:sync`, `mycalorie:backup`, and in Redis `mycalorie:state` / `rev` / `snapshot:*`); others get `…:<user>` in the browser and `mycalorie:u:<user>:…` in Redis. Demo data and device preferences (folded panels, developer flag) are shared per device.
-- Owner only: "Try Claude" (the route returns 403 for anyone else) and the model comparison panel and samples.
-- Tested end to end with two people, a legacy owner cookie, a forged cookie, and malformed entries (`.local-test/users-test.mjs`).
+### Model comparison
+
+- **In the app (owner only):** with "Keep meal photos for comparison" on, each logged photo is kept with:
+  - its hint and the Outside setting;
+  - Gemini's first answer (`estimate`) and Claude's (`claudeEstimate`), when asked;
+  - which answer was logged (`chosen`);
+  - what was finally logged.
+
+  Editing the logged meal updates the kept copy. Export shares one JSON file. Demo meals are never kept, and undoing a log drops its photo.
+- **On the Mac:** `npm run compare -- --from <export.json>` re-sends each photo to Gemini Flash and Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5 (effort `low` by default) and scores each against what was logged. It writes `compare/report-*.html` and asks before spending. `compare/` is git-ignored.
+
+### Phone polish
+
+- **No zoom:** fields are ≥16px, so iOS doesn't zoom on focus.
+- **Keyboard:** `ViewportSync` publishes `--keyboard-inset` and `--visual-height`, so sheets sit above the keyboard. Return keys go next / done / go.
+- **Status bar:** installed, the top keeps at least 54px clear (`--top-inset`).
+  - Installed mode is detected by the `display-mode: standalone` media query and by `data-standalone` (from `navigator.standalone`).
+  - A solid strip (`body::before`) sits behind the status bar.
+- **Sheets:** while one is open, the page behind it is frozen (`src/lib/scroll-lock.ts`).
+- **Folding:** panels fold with `Panel`'s `collapsible` prop; the state is stored by `useFolded` (`src/lib/use-folded.ts`).
+- **Install:** PWA manifest and generated icons (`icon.tsx`, `apple-icon.tsx`).
 
 ## Data model (`src/lib/types.ts`)
 
-- `AppState = { settings: { targets, keepForComparison? }, saved: SavedMeal[], logs: MealLog[] }`, stored in localStorage under `mycalorie:v1`. Demo data uses `mycalorie:demo:v5`: 12 weeks of 3–4 real meals per day with items, built from Indian meal templates in `src/lib/demo.ts`, with an 18-day streak and a best run of 26. It uses the demo switch `mycalorie:demo-mode`, and the developer flag `mycalorie:developer`. Whether the regulars panel is folded lives in `mycalorie:regulars-collapsed`.
-- `MealItem`: `quantity`, `unit`, `baseQuantity`, `baseMacros`, plus optional `gramsPerUnit`, `weightUnit`, `uncertain`, `cookingFat` and `sourceId`. An item's macros scale linearly from its base (`src/lib/items.ts`).
-- `SavedMeal` (a regular): `macros` for 1×, plus optional `items` and `product`.
-- `MealLog`: `macros` as eaten, `portion`, `day` (the local date), and optional `items` and `savedMealId`.
-- Older saved data is migrated in `store.ts`; for example, `proteinTarget` becomes `targets`.
+- **`AppState`:** `{ settings, saved: SavedMeal[], logs: MealLog[] }`.
+- **`Settings`:** `targets` (each `number | null`), plus optional `keepForComparison`, `readWith` (`"claude" | "gemini"`) and `changedAt`.
+- **`MealItem`:**
+  - `quantity`, `unit`, `baseQuantity`, `baseMacros`;
+  - optional `gramsPerUnit`, `weightUnit`, `uncertain`, `cookingFat` and `sourceId`.
+  - Macros scale linearly from the base (`src/lib/items.ts`).
+- **`SavedMeal`** (a regular): `macros` for 1×, plus optional `items`, `product` and `photo` (a data URL).
+- **`MealLog`:** `macros` as eaten, `portion`, `day` (local date), `eatenAt`, and optional `items` and `savedMealId`.
+- **Browser keys:**
+  - The data: `mycalorie:v1` (or `:<user>`).
+  - Demo: `mycalorie:demo:v5`, with the demo switch in `mycalorie:demo-mode` and the developer flag in `mycalorie:developer`.
+  - Folded panels: `mycalorie:regulars-collapsed` and `mycalorie:backup-collapsed`.
+- **Demo data** (`src/lib/demo.ts`): 12 weeks of 3–4 Indian meals a day with items, an 18-day streak, and a best run of 26.
+- **Migration:** older data is migrated in `store.ts`; for example, `proteinTarget` becomes `targets`.
 
 ## Working on it
 
 ```bash
 npm install
 npm run dev                      # http://localhost:3000 (add ?demo for sample data)
-MOCK_GEMINI=1 npm run dev        # canned AI answers; hint "label" returns a sample label
+MOCK_GEMINI=1 npm run dev        # canned Gemini and Claude answers; hint "label" returns a sample label
 npx tsc --noEmit && npm run lint && npm run build   # all three should pass before pushing
-npm run compare -- --from <export.json>             # model comparison (needs keys)
+npm run compare -- --from <export.json>             # model comparison (needs keys; asks before spending)
 ```
 
-- **Checking UI changes:** take Puppeteer screenshots at 390×844 @2x with `puppeteer-core` and the local Chrome. The scripts lived in the session scratchpad; recreate them as needed. Puppeteer can't emulate iOS standalone mode or the real keyboard, so a fake `visualViewport` was used to simulate the keyboard.
-- **Design workflow:** the Impeccable skill (`.impeccable/`).
-  - The direction contract is in `.impeccable/surfaces/src-app-page-tsx.md`.
-  - The design detector should report no non-advisory findings.
+- **Checking UI changes:** take Puppeteer screenshots at 390×844 @2x with `puppeteer-core` and the local Chrome.
+  - Scripts live in `.local-test/` (git-ignored). Examples: `users-test.mjs` (two people), `targets-test.mjs` (settings merge), `sonnet-default.mjs` (Claude first, fallback, switch), `export-test.mjs`.
+  - Puppeteer can't emulate iOS standalone mode or the real keyboard.
+- **Testing sync:** run Redis in Docker (`docker run -d --rm --name mycalorie-redis -p 6390:6379 redis:7-alpine`), then start dev with `REDIS_URL=redis://localhost:6390`.
+- **Testing several people:** start dev with `ACCESS_CODE`, `SESSION_SECRET` and `ACCESS_CODES` set.
+- **Spend:** never call the real Claude API in tests without asking; use `MOCK_GEMINI=1`.
+- **Vercel:** the Vercel plugin (MCP) can list env var names, deployments and project settings. Runtime logs returned 403 for it, and env values are never decrypted.
+- **Design workflow:** the Impeccable skill (`.impeccable/`). The direction contract is in `.impeccable/surfaces/src-app-page-tsx.md`, and the design detector should report no non-advisory findings.
 - **Commits:** end each message with the Claude co-author line. Push to `main` to deploy, then confirm with `gh api repos/sankhadeeproy007/mycalorie-app/deployments`.
 
-## Not yet verified on real Gemini
+## Not yet verified for real
 
-The production key exists only on Vercel, so these have only been tested with the mock:
-- the newer response schema (nullable fields, enum, label kind);
-- the bone-in rules (a tandoori leg piece);
-- text estimates;
-- regular matching.
-
-The owner confirmed a banana photo works. If a real call fails on the schema, the place to look is the `toGeminiSchema` conversion in `meal-prompt.ts`.
+- **Claude in production:** the key is set, but the Anthropic account had **no API credit**. The owner's $5 was claude.ai plan credit, which the API can't use. So no real Claude answer has come back yet, and until it does, Gemini answers.
+  - Once API credit is added at platform.claude.com → Billing, the first photo is the first real test.
+  - If it fails, the switch shows the reason in its "details" line.
+- **Gemini:** the newer response schema, the bone-in rules, text estimates and regular matching have only been tested with the mock. A real banana photo worked. If a real call fails on the schema, look at `toGeminiSchema` in `meal-prompt.ts`.
+- **Redis sync in production:** working as far as the owner has seen. After the `REDIS_URL` fix, the panel switched to "sync & backup" and the daily backup prompt went away. The settings-merge fix (2026-10-05) came after the owner noticed missing targets, so if targets are blank they need entering once more.
 
 ## Next steps
 
-1. **Collect photos (in progress):** the owner is logging meals with "Keep meal photos for comparison" switched on. At about 30–40 photos: add $5 of Claude API credit (it expires a year after purchase), export from the app, run `npm run compare -- --from …`, and pick a model. Sonnet 5.5 fits the $2–3 budget; Opus may not.
-2. **If Claude wins:** add a provider setting and a `src/lib/providers/claude.ts` (the comparison script already has a working Claude call to reuse), then switch `analyze-meal.ts` to it. If the user asks for refusal fallbacks, add them deliberately.
-3. **Offered, not built:** a targets calculator (protein + calories + fat %, with carbs filled in). The owner entered all four targets by hand instead.
-4. **Later:**
-   - Storing targets per day, so past days are scored against the targets in force then.
-   - Changing or removing a regular's photo (editing covers name, items and values).
-   - History and settings screens.
+1. **Claude API credit:** the owner adds credit at platform.claude.com → Billing and sets a monthly spend limit (about $5). Then check the first Claude answer and its cost on the switch.
+2. **Other people:** when ready, set `ACCESS_CODES` on Vercel and redeploy, then send each person the link and their code.
+3. **Later:**
+   - Store targets per day, so past days are scored against the targets in force then.
+   - Change or remove a regular's photo.
+   - A running total of Claude spend (offered, not built).
+   - A history screen.
    - Learning from corrections.
    - iOS splash images, to cover the brief dark moment before the HTML loads.
-5. **Known limitations:**
-   - The lockout counter lives in server memory.
-   - iOS may clear a home-screen app's storage after weeks without use, and deleting the app deletes its data. Cloud sync (once Redis is connected) or the backup file covers meals, regulars and targets; export comparison photos separately.
+4. **Known limitations:**
+   - The unlock lockout counter lives in server memory.
    - A logged meal's time and day can't be changed.
+   - Targets aren't kept per day, so CSV exports use today's targets.
+   - Deleting the home-screen app deletes local data; sync restores it after the access code, but comparison photos are only on the phone.
