@@ -6,6 +6,7 @@ import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { DaySheet } from "@/components/DaySheet";
 import { DeveloperPanel } from "@/components/DeveloperPanel";
 import { LaunchScreen } from "@/components/LaunchScreen";
+import { LogSheet } from "@/components/LogSheet";
 import { Dock } from "@/components/Dock";
 import { MealSheet, type LogChanges, type LogEntry, type PhotoCapture, type SheetRequest } from "@/components/meal/MealSheet";
 import { addSample, removeSampleForLog, updateSampleForLog } from "@/lib/comparison-store";
@@ -91,6 +92,7 @@ export function HomeScreen() {
   const state = useAppState();
   const today = useToday();
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
+  const [choosingLog, setChoosingLog] = useState(false);
   const [openDay, setOpenDay] = useState<string | null>(null);
   /** A meal opened from the day sheet returns there when its edit sheet closes. */
   const [returnDay, setReturnDay] = useState<string | null>(null);
@@ -321,7 +323,32 @@ export function HomeScreen() {
       </main>
 
       <Toast notice={notice} onDismiss={dismissNotice} />
-      <Dock onPhoto={openPhoto} onTypeIn={() => setSheet({ kind: "text" })} />
+      <Dock
+        onPhoto={openPhoto}
+        onLog={view && view.regulars.length > 0 ? () => setChoosingLog(true) : undefined}
+        onTypeIn={() => setSheet({ kind: "text" })}
+      />
+      <LogSheet
+        open={choosingLog}
+        regulars={view?.regulars ?? []}
+        onPhoto={(file) => {
+          setChoosingLog(false);
+          void openPhoto(file);
+        }}
+        onDescribe={() => {
+          setChoosingLog(false);
+          setSheet({ kind: "text" });
+        }}
+        onLogRegular={(regular) => {
+          setChoosingLog(false);
+          logRegular(regular, 1);
+        }}
+        onAdjustRegular={(regular) => {
+          setChoosingLog(false);
+          setSheet({ kind: "adjust", regular });
+        }}
+        onClose={() => setChoosingLog(false)}
+      />
       <MealSheet
         request={sheet}
         regulars={view?.regulars ?? []}

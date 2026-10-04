@@ -1,38 +1,26 @@
 "use client";
 
-import { useRef, type ChangeEvent } from "react";
 import { Camera, PenLine } from "lucide-react";
+import { usePhotoPicker } from "./usePhotoPicker";
 import styles from "./Dock.module.css";
 
 type DockProps = {
   onPhoto: (file: File) => void;
+  /** Opens the log sheet (photo, describe, or a regular). Without it, the button goes straight to the camera. */
+  onLog?: () => void;
   onTypeIn: () => void;
 };
 
 /** Fixed in the thumb zone: the screen's one primary action, and typing as the quiet alternative. */
-export function Dock({ onPhoto, onTypeIn }: DockProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const onChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (file) onPhoto(file);
-  };
+export function Dock({ onPhoto, onLog, onTypeIn }: DockProps) {
+  const photo = usePhotoPicker(onPhoto);
 
   return (
     <div className={styles.dock}>
       <div className={styles.inner}>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="visually-hidden"
-          tabIndex={-1}
-          aria-hidden="true"
-          onChange={onChange}
-        />
+        {photo.input}
 
-        <button type="button" className={styles.primary} onClick={() => inputRef.current?.click()}>
+        <button type="button" className={styles.primary} onClick={onLog ?? photo.pick}>
           <Camera size={18} strokeWidth={2} aria-hidden="true" />
           Log a meal
         </button>

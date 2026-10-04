@@ -59,7 +59,7 @@ On Vercel (Project → Settings → Environment Variables; **redeploy after chan
 - **Model comparison panel:** the "Keep meal photos for comparison" switch, a count, Export and Clear.
 - **Sync & backup panel:** with sync set up, the sync state (synced / syncing / offline / sync failed, last synced time) and the last backup file; without it, "backup" with the last backup date. Back up now and Restore either way.
 - **Developer panel (hidden):** a "Demo data" switch, "Reset demo data", and "hide".
-- **Dock:** "Log a meal" (photo) and "Type" (describe it, or enter numbers).
+- **Dock:** "Log a meal" and "Type" (describe it, or enter numbers). With regulars saved, "Log a meal" opens the **log sheet** (`LogSheet.tsx`): Photo and Describe, then the regulars in shelf order (time of day first); a tap logs 1×, the sliders icon opens "adjust before logging", and a filter appears past 8 regulars. With no regulars it opens the camera directly.
 
 **Meal sheet** (`src/components/meal/`). It moves through stages: compose → reading → review, or label.
 - **Compose:**
