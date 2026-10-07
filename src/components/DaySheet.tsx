@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { formatClock } from "@/lib/day";
 import { formatAmount } from "@/lib/format";
 import { formatQuantity, formatUnit, itemMacros } from "@/lib/items";
@@ -17,6 +17,8 @@ type DaySheetProps = {
   targets: Targets;
   onNavigate: (day: string) => void;
   onEditLog: (log: MealLog) => void;
+  /** Starts logging a meal onto this day. */
+  onAddMeal: (day: string) => void;
   onClose: () => void;
 };
 
@@ -44,7 +46,7 @@ export function DaySheet({ day, ...rest }: DaySheetProps) {
   );
 }
 
-function DayView({ day, today, logs, targets, onNavigate, onEditLog, onClose }: DaySheetProps & { day: string }) {
+function DayView({ day, today, logs, targets, onNavigate, onEditLog, onAddMeal, onClose }: DaySheetProps & { day: string }) {
   const meals = logs.filter((log) => log.day === day).sort((a, b) => a.eatenAt - b.eatenAt);
   const totals: Macros = meals.reduce(
     (sum, log) => ({
@@ -163,6 +165,11 @@ function DayView({ day, today, logs, targets, onNavigate, onEditLog, onClose }: 
           </ol>
         </>
       )}
+
+      <button type="button" className={styles.addMeal} onClick={() => onAddMeal(day)}>
+        <Plus size={16} strokeWidth={2} aria-hidden="true" />
+        Add a meal to {day === today ? "today" : "this day"}
+      </button>
     </div>
   );
 }

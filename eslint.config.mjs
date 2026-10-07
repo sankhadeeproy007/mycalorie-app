@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local, git-ignored test harness (Puppeteer scripts, a fake Upstash server).
+    ".local-test/**",
   ]),
 ]);
 

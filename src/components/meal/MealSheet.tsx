@@ -14,14 +14,15 @@ import { FAILURE_COPY } from "./failure-copy";
 import { ItemRow } from "./ItemRow";
 import { LabelReview } from "./LabelReview";
 import { IDLE_MODELS, ModelToggle, type ModelState } from "./ModelToggle";
+import { WhenField } from "./WhenField";
 import styles from "./MealSheet.module.css";
 
-/** What opened the sheet. */
+/** What opened the sheet. `when` presets when a new meal was eaten (adding to an earlier day); otherwise it's now. */
 export type SheetRequest =
-  | { kind: "photo"; image: PreparedImage; file: File }
+  | { kind: "photo"; image: PreparedImage; file: File; when?: number }
   /** `failure` explains why a photo couldn't be used, when the sheet falls back to describing. */
-  | { kind: "text"; failure?: AnalyzeFailure }
-  | { kind: "adjust"; regular: SavedMeal }
+  | { kind: "text"; failure?: AnalyzeFailure; when?: number }
+  | { kind: "adjust"; regular: SavedMeal; when?: number }
   | { kind: "edit"; regular: SavedMeal }
   | { kind: "log"; log: MealLog };
 
@@ -49,13 +50,15 @@ export type LogEntry = {
   saveAs?: { name: string; macros: Macros; items?: MealItem[]; product?: ProductInfo };
   /** Present when the meal came from a photo; kept for model comparison if that's switched on. */
   capture?: PhotoCapture;
+  /** When it was eaten, if not now. */
+  eatenAt?: number;
 };
 
 /** A regular as changed in the edit sheet. */
 export type RegularChanges = { name: string; macros: Macros; items?: MealItem[]; product?: ProductInfo };
 
 /** A logged meal as corrected in the edit sheet. */
-export type LogChanges = { name: string; macros: Macros; items?: MealItem[] };
+export type LogChanges = { name: string; macros: Macros; items?: MealItem[]; eatenAt?: number };
 
 type MealSheetProps = {
   request: SheetRequest | null;
@@ -63,7 +66,8 @@ type MealSheetProps = {
   allowClaude: boolean;
   regulars: SavedMeal[];
   onLog: (entry: LogEntry) => void;
-  onLogRegular: (regular: SavedMeal) => void;
+  /** Logs a matched regular instead, at the sheet's time. */
+  onLogRegular: (regular: SavedMeal, eatenAt?: number) => void;
   onSaveRegular: (id: string, changes: RegularChanges) => void;
   onRemoveRegular: (regular: SavedMeal) => void;
   onSaveLog: (id: string, changes: LogChanges) => void;
@@ -182,6 +186,11 @@ function MealFlow({
   onClose,
 }: MealFlowProps) {
   const [stage, setStage] = useState<Stage>(() => initialStage(request));
+  /** When the meal was eaten: an edited meal's own time, a preset earlier day, or `null` for now. */
+  const [when, setWhen] = useState<number | null>(() =>
+    request.kind === "log" ? request.log.eatenAt : "when" in request ? (request.when ?? null) : null,
+  );
+  const eatenAt = when ?? undefined;
   const [hint, setHint] = useState("");
   const [outside, setOutside] = useState(false);
   // Each AI's answer to a photo keeps its own edits; the switch flips between them.
@@ -199,6 +208,7 @@ function MealFlow({
       photo
         ? {
             ...entry,
+            eatenAt,
             capture: {
               image: photo.image,
               hint: hint.trim(),
@@ -209,7 +219,7 @@ function MealFlow({
               chosen: active,
             },
           }
-        : entry,
+        : { ...entry, eatenAt },
     );
   const regularsById = new Map(regulars.map((regular) => [regular.id, regular]));
 
@@ -358,6 +368,8 @@ function MealFlow({
         <LabelReview reading={stage.reading} photoFile={photo?.file} photoUrl={photo?.image.dataUrl} onLog={logWithCapture} />
       )}
 
+      {stage.name === "review" && request.kind !== "edit" && <WhenField at={when} onChange={setWhen} />}
+
       {stage.name === "review" && photo && allowClaude && (estimates.gemini || estimates.claude) && (
         <ModelToggle
           order={order}
@@ -376,10 +388,10 @@ function MealFlow({
           outside={outside}
           photo={photo}
           onLog={logWithCapture}
-          onLogRegular={onLogRegular}
+          onLogRegular={(regular) => onLogRegular(regular, eatenAt)}
           onSaveRegular={onSaveRegular}
           onRemoveRegular={onRemoveRegular}
-          onSaveLog={onSaveLog}
+          onSaveLog={(id, changes) => onSaveLog(id, { ...changes, eatenAt })}
           onDeleteLog={onDeleteLog}
         />
       )}

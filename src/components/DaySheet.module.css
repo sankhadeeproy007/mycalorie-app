@@ -203,3 +203,25 @@
   gap: 8px;
   padding: 2px 0;
 }
+
+/* Dashed like the meal sheet's "+ add": an addition, quieter than the dock's primary button. */
+.addMeal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1px dashed var(--seam-strong);
+  border-radius: var(--radius-control);
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  background: none;
+}
+
+@media (hover: hover) {
+  .addMeal:hover {
+    border-color: var(--muted);
+    background: var(--raised);
+  }
+}

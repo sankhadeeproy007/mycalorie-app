@@ -122,18 +122,19 @@ function newId(): string {
   return crypto.randomUUID();
 }
 
-type NewLog = { name: string; macros: Macros; portion?: number; savedMealId?: string; items?: MealItem[] };
+/** `eatenAt` backdates the meal (it lands on that day); without it the meal is logged now. */
+type NewLog = { name: string; macros: Macros; portion?: number; savedMealId?: string; items?: MealItem[]; eatenAt?: number };
 
-export function logMeal({ name, macros, portion = 1, savedMealId, items }: NewLog): MealLog {
-  const now = Date.now();
+export function logMeal({ name, macros, portion = 1, savedMealId, items, eatenAt }: NewLog): MealLog {
+  const at = eatenAt ?? Date.now();
   const log: MealLog = {
     id: newId(),
     name,
     macros: roundMacros(scaleMacros(macros, portion)),
     portion,
     items: items && scaleItems(items, portion),
-    eatenAt: now,
-    day: dayKey(new Date(now)),
+    eatenAt: at,
+    day: dayKey(new Date(at)),
     savedMealId,
   };
   commit((prev) => ({ ...prev, logs: [...prev.logs, log] }));
@@ -144,13 +145,14 @@ export function removeLog(id: string) {
   commit((prev) => ({ ...prev, logs: prev.logs.filter((log) => log.id !== id) }));
 }
 
-type LogChanges = { name: string; macros: Macros; items?: MealItem[] };
+type LogChanges = { name: string; macros: Macros; items?: MealItem[]; eatenAt?: number };
 
-/** Corrects a logged meal in place; its time, day and portion stay as they were. */
+/** Corrects a logged meal in place. A new `eatenAt` moves it, to another day if need be; its portion stays. */
 export function updateLog(id: string, changes: LogChanges) {
+  const moved = changes.eatenAt === undefined ? {} : { day: dayKey(new Date(changes.eatenAt)) };
   commit((prev) => ({
     ...prev,
-    logs: prev.logs.map((log) => (log.id === id ? { ...log, ...changes } : log)),
+    logs: prev.logs.map((log) => (log.id === id ? { ...log, ...changes, ...moved } : log)),
   }));
 }
 

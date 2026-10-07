@@ -1,6 +1,6 @@
 # Mycalorie: project status and handoff
 
-Last updated: 2026-10-07. Start here when picking the project back up.
+Last updated: 2026-10-08. Start here when picking the project back up.
 - **PRODUCT.md:** the product decisions.
 - **DESIGN.md:** the visual system.
 - **This file:** what's built, how it fits together, what's pending, and how to work on it.
@@ -88,6 +88,7 @@ In the Console design: graphite panels, hairline seams, mono figures. From the t
 - **Streak panel:** a 12-week graph in a protein-blue ramp, with a legend (none / under / hit).
   - Tapping it opens the nearest day in the **day sheet**: totals against targets, the score, and that day's meals with their items, with ‹ › to step between days.
   - Tapping a meal there opens **Edit meal**; closing it returns to the day.
+  - **+ Add a meal to this day** opens the log sheet titled "Add to <day>" (`addToDay` in HomeScreen). Photo, Describe, a regular, or adjust all land on that day, preset to the current clock time on that date (`timeOnDay` in `day.ts`). Afterwards the day sheet reopens.
 - **Regulars:** photo tiles, and the panel folds from its header.
   - A tap logs 1×.
   - The "1×" tab opens the portion picker (½, 1, 1½, 2), plus a pencil (**edit regular**) and sliders (**adjust before logging**).
@@ -124,6 +125,11 @@ Stages: compose → reading → review, or label.
   - Each answer is its own review with its own edits, and flipping keeps them.
   - The Claude side shows the actual cost (e.g. "1.9¢").
   - A failed side shows "Retry …" and the reason, e.g. "API credit may be used up".
+- **When field** (`WhenField.tsx`): "Eaten · Today · 13:30" at the top of every review except edit regular. The row is an invisible native `datetime-local` input, so tapping opens the iOS picker. Times after the sheet opened clamp to now.
+  - New meals log at that time (`LogEntry.eatenAt` → `logMeal({ eatenAt })`).
+  - Editing a meal can move it: `updateLog` recomputes `day` from a new `eatenAt`.
+  - The toast names the day when it isn't today ("logged Poha to Mon 5 Oct +9 g").
+  - Today's list is sorted by time eaten.
 - **Review:**
   - **Items:** a − value unit + stepper per item (½ steps, ½ tsp for oil and ghee, 25 g by weight, a g/ml toggle where weight is known). Items the AI is unsure of are marked **check** and shown first. Items can be removed.
   - **Item numbers** (`ItemRow.tsx`): each item shows "protein g · kcal ✎". Tapping it edits all four numbers for the amount shown. This sets the item's base to the corrected values, so later quantity changes scale from them.
@@ -218,7 +224,7 @@ Stages: compose → reading → review, or label.
 - **Status bar:** installed, the top keeps at least 54px clear (`--top-inset`).
   - Installed mode is detected by the `display-mode: standalone` media query and by `data-standalone` (from `navigator.standalone`).
   - A solid strip (`body::before`) sits behind the status bar.
-- **Sheets:** while one is open, the page behind it is frozen (`src/lib/scroll-lock.ts`).
+- **Sheets:** while one is open, the page behind it is frozen (`src/lib/scroll-lock.ts`). `Sheet`'s `onClose` fires only when the person dismisses it (Escape, backdrop, Close), not when the app closes it to hand over to another sheet. Before this, handing from the log sheet to the describe sheet cancelled the hand-over.
 - **Folding:** panels fold with `Panel`'s `collapsible` prop; the state is stored by `useFolded` (`src/lib/use-folded.ts`).
 - **Install:** PWA manifest and generated icons (`icon.tsx`, `apple-icon.tsx`).
 
@@ -280,6 +286,5 @@ npm run compare -- --from <export.json>             # model comparison (needs ke
    - iOS splash images, to cover the brief dark moment before the HTML loads.
 4. **Known limitations:**
    - The unlock lockout counter lives in server memory.
-   - A logged meal's time and day can't be changed.
    - Targets aren't kept per day, so CSV exports use today's targets.
    - Deleting the home-screen app deletes local data; sync restores it after the access code, but comparison photos are only on the phone.

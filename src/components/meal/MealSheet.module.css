@@ -718,3 +718,42 @@
   color: var(--muted);
   font-size: 0.82rem;
 }
+
+/* "Eaten · Today · 13:30": a quiet row whose whole area opens the native date and time picker. */
+.when {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 14px;
+  padding: 0 12px;
+  border: 1px solid var(--seam);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  background: var(--well);
+}
+
+.when:focus-within {
+  border-color: var(--accent-edge);
+}
+
+.whenLabel {
+  font-size: 0.85rem;
+}
+
+.whenValue {
+  margin-left: auto;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+/* The real input covers the row, invisible, so a tap anywhere opens the picker. */
+.whenInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}

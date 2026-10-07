@@ -10,7 +10,8 @@ The full picture of what's built, how it fits together and what's next is in [`d
 ## What it does
 
 - **Log a meal** from a photo, a description ("2 rotis and a katori of dal"), a nutrition label, or typed numbers.
-- **Review and correct:** step quantities (½ roti, ½ tsp ghee, 25 g), fix any item's protein, calories, carbs and fat, add or remove items, or type over the totals. Logged meals can be edited or deleted later, including on past days.
+- **Review and correct:** step quantities (½ roti, ½ tsp ghee, 25 g), fix any item's protein, calories, carbs and fat, add or remove items, or type over the totals. Logged meals can be edited, moved to another day or time, or deleted later.
+- **Earlier days:** open a past day from the streak graph and use "+ Add a meal", or pick a date and time in any meal sheet's "Eaten" row.
 - **Regulars:** save a meal with its items and photo, then log it with one tap, at any portion, or adjust it first. Regulars can be edited or removed.
 - **Two AIs:** for the owner, Claude Sonnet 5.5 reads meals first (about 2¢ a photo) and free Gemini takes over if Claude can't answer. A Claude | Gemini switch on each photo asks the other one and flips between the answers. Everyone else uses Gemini.
 - **Several people:** each has their own access code and completely separate data.

@@ -16,7 +16,7 @@ import { ProteinPanel } from "@/components/ProteinPanel";
 import { Regulars } from "@/components/Regulars";
 import { TargetsSheet } from "@/components/TargetsSheet";
 import { Toast, type UndoNotice } from "@/components/Toast";
-import { useToday } from "@/lib/day";
+import { dayKey, formatDayHeading, timeOnDay, useToday } from "@/lib/day";
 import { prepareForAnalysis, shelfThumbnail } from "@/lib/image";
 import { itemsFromRegular } from "@/lib/items";
 import {
@@ -99,6 +99,8 @@ export function HomeScreen({ userId }: { userId: string }) {
   const today = useToday();
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
   const [choosingLog, setChoosingLog] = useState(false);
+  /** When a meal being added to an earlier day was eaten; `null` while logging for now. */
+  const [target, setTarget] = useState<number | null>(null);
   const [openDay, setOpenDay] = useState<string | null>(null);
   /** A meal opened from the day sheet returns there when its edit sheet closes. */
   const [returnDay, setReturnDay] = useState<string | null>(null);
@@ -145,7 +147,7 @@ export function HomeScreen({ userId }: { userId: string }) {
     return {
       targets,
       totals,
-      todaysLogs: state.logs.filter((log) => log.day === today),
+      todaysLogs: state.logs.filter((log) => log.day === today).sort((a, b) => a.eatenAt - b.eatenAt),
       regulars: orderShelf(state.saved, state.logs, today),
       score: dayScore(totals, targets),
       recentScores: recentScores(byDay, targets, today),
@@ -158,7 +160,10 @@ export function HomeScreen({ userId }: { userId: string }) {
   const announceLog = (log: MealLog) =>
     setNotice({
       key: log.id,
-      message: `logged ${log.name} +${log.macros.protein} g`,
+      message:
+        log.day === today
+          ? `logged ${log.name} +${log.macros.protein} g`
+          : `logged ${log.name} to ${formatDayHeading(log.day)} +${log.macros.protein} g`,
       undo: () => {
         removeLog(log.id);
         void removeSampleForLog(log.id).then(refreshComparison);
@@ -188,29 +193,48 @@ export function HomeScreen({ userId }: { userId: string }) {
     }
   };
 
-  const logRegular = (meal: SavedMeal, portion: number) =>
+  const logRegular = (meal: SavedMeal, portion: number, eatenAt?: number) =>
     announceLog(
-      logMeal({ name: meal.name, macros: meal.macros, portion, savedMealId: meal.id, items: itemsFromRegular(meal) }),
+      logMeal({ name: meal.name, macros: meal.macros, portion, savedMealId: meal.id, items: itemsFromRegular(meal), eatenAt }),
     );
 
-  const openPhoto = async (file: File) => {
+  const openPhoto = async (file: File, when?: number) => {
     try {
-      setSheet({ kind: "photo", image: await prepareForAnalysis(file), file });
+      setSheet({ kind: "photo", image: await prepareForAnalysis(file), file, when });
     } catch {
-      setSheet({ kind: "text", failure: "unreadable" });
+      setSheet({ kind: "text", failure: "unreadable", when });
     }
   };
 
-  const logEntry = async ({ name, macros, items, savedMealId, photoFile, saveAs, capture }: LogEntry) => {
+  /** Back to the day a meal was being added to or edited from, or to the top of today. */
+  const finishLogging = () => {
+    setTarget(null);
+    if (returnDay) {
+      setOpenDay(returnDay);
+      setReturnDay(null);
+      return;
+    }
+    // After the sheet has released the page, so the scroll isn't undone by the restore.
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  };
+
+  /** "+ Add a meal" on a day: the usual choices, with everything landing on that day. */
+  const addToDay = (day: string) => {
+    setReturnDay(day);
+    setOpenDay(null);
+    setTarget(timeOnDay(day));
+    setChoosingLog(true);
+  };
+
+  const logEntry = async ({ name, macros, items, savedMealId, photoFile, saveAs, capture, eatenAt }: LogEntry) => {
     setSheet(null);
     let regularId = savedMealId;
     if (saveAs) {
       const photo = photoFile ? await shelfThumbnail(photoFile).catch(() => undefined) : undefined;
       regularId = saveMeal({ ...saveAs, photo }).id;
     }
-    // After the sheet has released the page, so the scroll isn't undone by the restore.
-    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
-    const log = logMeal({ name, macros, items, savedMealId: regularId });
+    finishLogging();
+    const log = logMeal({ name, macros, items, savedMealId: regularId, eatenAt });
     announceLog(log);
     // Demo meals are not real meals, so they never join the comparison set.
     if (capture && owner && state?.settings.keepForComparison && !isDemo()) void keepSample(capture, log);
@@ -239,6 +263,7 @@ export function HomeScreen({ userId }: { userId: string }) {
 
   const closeSheet = () => {
     setSheet(null);
+    setTarget(null);
     if (returnDay) setOpenDay(returnDay);
     setReturnDay(null);
   };
@@ -349,33 +374,39 @@ export function HomeScreen({ userId }: { userId: string }) {
       />
       <LogSheet
         open={choosingLog}
+        day={target === null ? null : dayKey(new Date(target))}
         regulars={view?.regulars ?? []}
         onPhoto={(file) => {
           setChoosingLog(false);
-          void openPhoto(file);
+          void openPhoto(file, target ?? undefined);
         }}
         onDescribe={() => {
           setChoosingLog(false);
-          setSheet({ kind: "text" });
+          setSheet({ kind: "text", when: target ?? undefined });
         }}
         onLogRegular={(regular) => {
           setChoosingLog(false);
-          logRegular(regular, 1);
+          logRegular(regular, 1, target ?? undefined);
+          finishLogging();
         }}
         onAdjustRegular={(regular) => {
           setChoosingLog(false);
-          setSheet({ kind: "adjust", regular });
+          setSheet({ kind: "adjust", regular, when: target ?? undefined });
         }}
-        onClose={() => setChoosingLog(false)}
+        onClose={() => {
+          setChoosingLog(false);
+          closeSheet();
+        }}
       />
       <MealSheet
         request={sheet}
         allowClaude={owner}
         regulars={view?.regulars ?? []}
         onLog={logEntry}
-        onLogRegular={(regular) => {
+        onLogRegular={(regular, eatenAt) => {
           setSheet(null);
-          logRegular(regular, 1);
+          logRegular(regular, 1, eatenAt);
+          finishLogging();
         }}
         onSaveRegular={(id, changes) => {
           setSheet(null);
@@ -395,6 +426,7 @@ export function HomeScreen({ userId }: { userId: string }) {
           targets={state.settings.targets}
           onNavigate={setOpenDay}
           onEditLog={editLogFromDay}
+          onAddMeal={addToDay}
           onClose={() => setOpenDay(null)}
         />
       )}

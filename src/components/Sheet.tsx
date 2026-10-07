@@ -17,8 +17,11 @@ type SheetProps = {
 /** A bottom sheet on the native modal dialog: Escape, backdrop tap and focus trapping come with it. */
 export function Sheet({ open, labelledBy, onClose, children }: SheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  /** Whether the app still wants the sheet open; a close it asked for itself isn't a dismissal. */
+  const wantedOpen = useRef(open);
 
   useEffect(() => {
+    wantedOpen.current = open;
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open && !dialog.open) {
@@ -37,7 +40,9 @@ export function Sheet({ open, labelledBy, onClose, children }: SheetProps) {
       ref={dialogRef}
       className={styles.sheet}
       aria-labelledby={labelledBy}
-      onClose={onClose}
+      // `onClose` means the person dismissed it (Escape, the backdrop, Close). When the app closes the
+      // sheet to hand over to another one, reporting that as a dismissal would undo the hand-over.
+      onClose={() => wantedOpen.current && onClose()}
       onClick={(event) => event.target === event.currentTarget && onClose()}
       onFocus={(event) => revealWhenFocused(event.target)}
     >

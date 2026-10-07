@@ -45,6 +45,7 @@ A private tool built around one person's routine (and a handful of invited peopl
 - **Describe / Type:** a description ("2 rotis and a katori of dal") is estimated by the AI, or numbers can be entered directly.
 - **Nutrition labels:** the camera recognises a label and reads exact per-serving and per-100 g/ml values. The result is saved as a product, counted in servings, and usable as an ingredient.
 - **Eggs mean whites:** the owner eats only egg whites, so boiled, fried or poached eggs count as whites unless the hint or description mentions the yolk or whole eggs. Omelettes and bhurji go by what the photo shows (yellow means whole). It's a per-person switch in the developer panel: on by default for the owner, off for everyone else.
+- **Earlier days:** a past day (opened from the streak graph) has "+ Add a meal": the same Photo / Describe / regulars choice, landing on that day. Every meal sheet also shows when it was eaten ("Today · 13:30"); tapping it picks another date and time, for new meals and for moving a logged one. Times after now aren't allowed.
 - **Regular matching:** the AI is told the person's regulars; when a photo confidently matches one, the review offers to log that regular instead.
 
 **Which AI reads**
