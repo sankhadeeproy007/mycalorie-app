@@ -18,5 +18,5 @@ export async function POST(request: Request) {
     const estimate = mockTextEstimate(description);
     return Response.json(model === "claude" ? { ...estimate, name: `${estimate.name} (Claude)`, costUsd: 0.004 } : estimate);
   }
-  return respondWithAnalysis(`estimate (${model})`, () => estimateFromText(description, body?.outside === true, model));
+  return respondWithAnalysis(`estimate (${model})`, () => estimateFromText(description, { outside: body?.outside === true, eggWhitesOnly: body?.eggWhitesOnly === true }, model));
 }

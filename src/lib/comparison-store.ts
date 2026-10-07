@@ -16,6 +16,8 @@ export type ComparisonSample = {
   photo: Blob;
   hint: string;
   outside: boolean;
+  /** Whether the photo was read as "eggs are whites only". */
+  eggWhitesOnly?: boolean;
   /** Gemini's answer before any correction; null when it failed and the meal was typed in. */
   estimate: Analysis | null;
   /** Claude's answer, when "Try Claude" was tapped for this photo. */

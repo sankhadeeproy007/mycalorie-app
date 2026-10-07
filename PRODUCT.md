@@ -44,6 +44,7 @@ A private tool built around one person's routine (and a handful of invited peopl
 - **Photo:** an optional hint ("3 eggs, 1 tsp ghee") and an **Outside food** switch. The AI treats the hint as fact and returns each item in Indian household measures with grams, a separate oil/ghee line for cooked dishes, and a flag on items it's unsure of.
 - **Describe / Type:** a description ("2 rotis and a katori of dal") is estimated by the AI, or numbers can be entered directly.
 - **Nutrition labels:** the camera recognises a label and reads exact per-serving and per-100 g/ml values. The result is saved as a product, counted in servings, and usable as an ingredient.
+- **Eggs mean whites:** the owner eats only egg whites, so boiled, fried or poached eggs count as whites unless the hint or description mentions the yolk or whole eggs. Omelettes and bhurji go by what the photo shows (yellow means whole). It's a per-person switch in the developer panel: on by default for the owner, off for everyone else.
 - **Regular matching:** the AI is told the person's regulars; when a photo confidently matches one, the review offers to log that regular instead.
 
 **Which AI reads**

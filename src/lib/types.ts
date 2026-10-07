@@ -75,6 +75,8 @@ export type Settings = {
   keepForComparison?: boolean;
   /** Which AI reads meals first; the owner's default is Claude. Others always use Gemini. */
   readWith?: PhotoModel;
+  /** How "eggs" are counted: whites only unless the yolk is mentioned, or whole. Default: whites for the owner, whole for others. */
+  eggs?: "whites" | "whole";
   /** When any setting last changed, so a sync merge keeps the newest settings rather than this device's. */
   changedAt?: number;
 };

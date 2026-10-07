@@ -1,6 +1,6 @@
 # Mycalorie: project status and handoff
 
-Last updated: 2026-10-05. Start here when picking the project back up.
+Last updated: 2026-10-07. Start here when picking the project back up.
 - **PRODUCT.md:** the product decisions.
 - **DESIGN.md:** the visual system.
 - **This file:** what's built, how it fits together, what's pending, and how to work on it.
@@ -35,6 +35,7 @@ A meal tracker for Indian food, used as an installed web app on the owner's iPho
 - **Look:** the "Console" design was picked from 5 mockups, after the hand-drawn "Prep Shelf" look was rejected as childish. No mascots, confetti or guilt cues.
 - **Mockups first:** show options before big visual changes.
 - **Gamification:** streaks, day score and milestones are wanted. Levels/XP were not chosen.
+- **Eggs:** eats only egg whites (2026-10-07). Whole eggs in a photo or description count as whites unless the yolk is mentioned.
 - **AI:** prefers Claude Sonnet's answers to Gemini's (2026-10-05), so Sonnet is the default reader for the owner. Opus was judged too expensive for the budget.
 - **Developer-only controls** live in the hidden developer panel (5 taps on the date): demo data, the Claude switch, and CSV export.
 
@@ -100,6 +101,7 @@ In the Console design: graphite panels, hairline seams, mono figures. From the t
   - Without sync it's titled "backup". Back up now and Restore are always there.
 - **Developer panel (hidden):**
   - "Demo data" switch and "Reset demo data".
+  - **"Eggs are whites only"** (per person; on by default for the owner, off for others).
   - The owner's **"Read meals with Claude Sonnet"** switch.
   - **Export your data:** Meals CSV and Daily totals CSV.
   - "hide".
@@ -142,6 +144,7 @@ Stages: compose → reading → review, or label.
   - **Item rules:** Indian dish names and household units; grams per item with a liquid flag; oil/ghee as its own tsp item; `uncertain` for hidden quantities.
   - **Bones:** for bone-in meat and fish, only the edible meat counts (leg/thigh ~30% bone, drumstick ~35%, mutton piece ~30%, fish ~40%), and the cut is named.
   - **Regulars:** the person's regulars are sent along so a photo can match one.
+  - **Egg whites:** with `eggWhitesOnly` (from `settings.eggs`; `eggWhitesOnly()` in `meal-api.ts`), photos and descriptions get an extra rule. Separable-yolk eggs (boiled, fried, poached) count as "Egg whites", about 3.6 g protein and 17 kcal each, unless the yolk is mentioned. For photos, beaten-in dishes go by colour; for descriptions, they count whole unless "whites" is said. Kept comparison samples record the flag, and the compare script replays it.
 - **Claude:** `providers/claude.ts`.
   - Sonnet 5.5, effort `low`, structured output (`output_config.format`).
   - Server-side refusal fallback (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`).
@@ -222,7 +225,7 @@ Stages: compose → reading → review, or label.
 ## Data model (`src/lib/types.ts`)
 
 - **`AppState`:** `{ settings, saved: SavedMeal[], logs: MealLog[] }`.
-- **`Settings`:** `targets` (each `number | null`), plus optional `keepForComparison`, `readWith` (`"claude" | "gemini"`) and `changedAt`.
+- **`Settings`:** `targets` (each `number | null`), plus optional `keepForComparison`, `readWith` (`"claude" | "gemini"`), `eggs` (`"whites" | "whole"`) and `changedAt`.
 - **`MealItem`:**
   - `quantity`, `unit`, `baseQuantity`, `baseMacros`;
   - optional `gramsPerUnit`, `weightUnit`, `uncertain`, `cookingFat` and `sourceId`.

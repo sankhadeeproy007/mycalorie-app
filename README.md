@@ -64,6 +64,8 @@ For the owner:
 
 Logging, adjusting or editing a regular never calls either model, so credit is spent only on new meals.
 
+**Eggs are whites only** (developer panel, per person; on by default for the owner): boiled, fried or poached eggs are counted as egg whites unless the hint or description mentions the yolk or whole eggs. Omelettes and bhurji go by what the photo shows.
+
 ## Data, sync and backups
 
 - **Working copy:** the phone's browser storage, so the app opens instantly and works offline.

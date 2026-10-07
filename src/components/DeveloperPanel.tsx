@@ -15,6 +15,8 @@ type DeveloperPanelProps = {
   logs: MealLog[];
   targets: Targets;
   demo: boolean;
+  /** "Eggs mean whites" for the signed-in person. */
+  eggWhites: { on: boolean; onChange: (on: boolean) => void };
   /** The owner's "Read meals with Claude Sonnet" setting; omitted for everyone else. */
   claudeFirst?: { on: boolean; onChange: (on: boolean) => void };
   onDemoChange: (on: boolean) => void;
@@ -24,7 +26,7 @@ type DeveloperPanelProps = {
 };
 
 /** Testing aids. Demo data lives in its own storage, so real logs are never touched. */
-export function DeveloperPanel({ logs, targets, demo, claudeFirst, onDemoChange, onResetDemo, onHide }: DeveloperPanelProps) {
+export function DeveloperPanel({ logs, targets, demo, eggWhites, claudeFirst, onDemoChange, onResetDemo, onHide }: DeveloperPanelProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [exportNote, setExportNote] = useState<string | null>(null);
 
@@ -73,6 +75,19 @@ export function DeveloperPanel({ logs, targets, demo, claudeFirst, onDemoChange,
           {confirmingReset ? "Tap again to reset demo data" : "Reset demo data"}
         </button>
       )}
+
+      <div className={styles.setting}>
+        <SwitchRow
+          label="Eggs are whites only"
+          hint={
+            eggWhites.on
+              ? "Boiled, fried or poached eggs count as egg whites unless you mention the yolk. Omelettes and bhurji go by what the photo shows."
+              : "Eggs count whole, yolk included."
+          }
+          on={eggWhites.on}
+          onChange={eggWhites.onChange}
+        />
+      </div>
 
       {claudeFirst && (
         <div className={styles.setting}>

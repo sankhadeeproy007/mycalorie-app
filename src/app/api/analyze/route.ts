@@ -30,7 +30,12 @@ export async function POST(request: Request) {
     return Response.json({ error: "too_large" }, { status: 413 });
   }
 
-  const context = { hint: clip(body?.hint, MAX_HINT), outside: body?.outside === true, regulars: readRegulars(body?.regulars) };
+  const context = {
+    hint: clip(body?.hint, MAX_HINT),
+    outside: body?.outside === true,
+    regulars: readRegulars(body?.regulars),
+    eggWhitesOnly: body?.eggWhitesOnly === true,
+  };
   const model = body?.model === "claude" ? "claude" : "gemini";
   if (model === "claude" && !(await mayUseClaude())) return Response.json(CLAUDE_REFUSED, { status: 403 });
   if (mockingGemini()) {

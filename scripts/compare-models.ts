@@ -383,7 +383,7 @@ function jobsFromExport(path: string, limit: number): Job[] {
       imagePath,
       note: itemSummary(sample.logged.items) ?? sample.logged.name,
       protein: sample.logged.macros.protein,
-      context: { hint: sample.hint || undefined, outside: sample.outside },
+      context: { hint: sample.hint || undefined, outside: sample.outside, eggWhitesOnly: sample.eggWhitesOnly },
       appEstimate: sample.estimate,
     };
   });

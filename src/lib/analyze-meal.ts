@@ -47,13 +47,14 @@ export async function analyzePhoto(
 
 export async function estimateFromText(
   description: string,
-  outside: boolean,
+  context: Pick<MealContext, "outside" | "eggWhitesOnly">,
   model: PhotoModel = "gemini",
 ): Promise<{ name: string; items: EstimatedItem[]; costUsd?: number }> {
+  const instructions = textInstructions(description, context);
   if (model === "claude") {
-    const { data, costUsd } = await callClaude<RawText>({ instructions: textInstructions(description, outside) }, TEXT_SCHEMA);
+    const { data, costUsd } = await callClaude<RawText>({ instructions }, TEXT_SCHEMA);
     return { ...interpretText(data), costUsd };
   }
-  const { data } = await callGemini<RawText>([{ text: textInstructions(description, outside) }], TEXT_SCHEMA, gemini());
+  const { data } = await callGemini<RawText>([{ text: instructions }], TEXT_SCHEMA, gemini());
   return interpretText(data);
 }

@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import type { PreparedImage } from "@/lib/image";
 import { fromEstimate, itemsFromRegular, roundMacros, scaleMacros, totalMacros } from "@/lib/items";
 import { blurOnEnter, submitOnEnter } from "@/lib/keyboard";
-import { estimateDescription, otherModel, preferredModel, requestAnalysis, type AnalyzeFailure } from "@/lib/meal-api";
+import { eggWhitesOnly, estimateDescription, otherModel, preferredModel, requestAnalysis, type AnalyzeFailure } from "@/lib/meal-api";
 import type { Analysis, LabelReading, Macros, MealItem, MealLog, PhotoModel, ProductInfo, SavedMeal } from "@/lib/types";
 import { SwitchRow } from "../SwitchRow";
 import { EMPTY_MACRO_VALUES, MacroFields, parseAmount, Sheet, SheetHeader, type MacroValues } from "../Sheet";
@@ -33,6 +33,7 @@ export type PhotoCapture = {
   image: PreparedImage;
   hint: string;
   outside: boolean;
+  eggWhitesOnly: boolean;
   estimate: Analysis | null;
   claudeEstimate?: Analysis | null;
   chosen: PhotoModel;
@@ -202,6 +203,7 @@ function MealFlow({
               image: photo.image,
               hint: hint.trim(),
               outside,
+              eggWhitesOnly: eggWhitesOnly(),
               estimate: estimates.gemini ?? null,
               claudeEstimate: estimates.claude ?? null,
               chosen: active,

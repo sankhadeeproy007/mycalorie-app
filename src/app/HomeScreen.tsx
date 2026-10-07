@@ -41,6 +41,7 @@ import {
   resetDemoData,
   saveMeal,
   setDemoMode,
+  setEggs,
   setKeepForComparison,
   setReadWith,
   setTargets,
@@ -175,6 +176,7 @@ export function HomeScreen({ userId }: { userId: string }) {
         photo,
         hint: capture.hint,
         outside: capture.outside,
+        eggWhitesOnly: capture.eggWhitesOnly,
         estimate: capture.estimate,
         claudeEstimate: capture.claudeEstimate,
         chosen: capture.chosen,
@@ -262,6 +264,7 @@ export function HomeScreen({ userId }: { userId: string }) {
     setNotice({ key: `rm-${log.id}`, message: `removed ${log.name}`, undo: () => restoreLog(log) });
   };
 
+  const eggWhites = (state?.settings.eggs ?? (owner ? "whites" : "whole")) === "whites";
   const claudeFirst = (state?.settings.readWith ?? "claude") === "claude";
   const chooseClaudeFirst = (on: boolean) => setReadWith(on ? "claude" : "gemini");
 
@@ -317,6 +320,7 @@ export function HomeScreen({ userId }: { userId: string }) {
             {(developerShown || isDemo()) && (
               <DeveloperPanel
                 claudeFirst={owner ? { on: claudeFirst, onChange: chooseClaudeFirst } : undefined}
+                eggWhites={{ on: eggWhites, onChange: (on) => setEggs(on ? "whites" : "whole") }}
                 logs={state?.logs ?? []}
                 targets={state?.settings.targets ?? NO_TARGETS}
                 demo={isDemo()}

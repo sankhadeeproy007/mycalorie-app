@@ -51,6 +51,7 @@ export function requestAnalysis(image: PreparedImage, { hint, outside, regulars 
     mimeType: image.mimeType,
     hint,
     outside,
+    eggWhitesOnly: eggWhitesOnly(),
     regulars: regulars.map((regular) => ({
       id: regular.id,
       name: regular.name,
@@ -65,12 +66,17 @@ export function preferredModel(): PhotoModel {
   return isOwner() && (readSettings().readWith ?? "claude") === "claude" ? "claude" : "gemini";
 }
 
+/** Whether "eggs" means whites only for the signed-in person: the owner's default is yes, everyone else's no. */
+export function eggWhitesOnly(): boolean {
+  return (readSettings().eggs ?? (isOwner() ? "whites" : "whole")) === "whites";
+}
+
 export const otherModel = (model: PhotoModel): PhotoModel => (model === "claude" ? "gemini" : "claude");
 
 type Estimate = { name: string; items: EstimatedItem[]; costUsd?: number };
 
 function requestEstimate(text: string, outside: boolean, model: PhotoModel) {
-  return post<Estimate>("/api/estimate", { text, outside, model });
+  return post<Estimate>("/api/estimate", { text, outside, model, eggWhitesOnly: eggWhitesOnly() });
 }
 
 /** A description, read by the preferred AI; if Claude can't answer (no credit, say), free Gemini does. */

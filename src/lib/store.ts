@@ -272,6 +272,10 @@ export function setTargets(targets: Targets) {
   changeSettings({ targets });
 }
 
+export function setEggs(eggs: "whites" | "whole") {
+  changeSettings({ eggs });
+}
+
 export function setReadWith(model: PhotoModel) {
   changeSettings({ readWith: model });
 }

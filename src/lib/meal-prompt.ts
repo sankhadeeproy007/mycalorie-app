@@ -14,7 +14,16 @@ export type MealContext = {
   /** The owner said this was eaten out: assume restaurant oil, ghee and portions. */
   outside?: boolean;
   regulars?: RegularSummary[];
+  /** This person eats only egg whites unless they say otherwise (see EGG_WHITES_PHOTO). */
+  eggWhitesOnly?: boolean;
 };
+
+/** What a person who eats only egg whites means by "eggs". Per large egg white, roughly 33 g. */
+const EGG_WHITE_VALUES = `about 33 g, 3.6 g protein, 17 kcal, 0.2 g carbs and 0.1 g fat each`;
+
+const EGG_WHITES_PHOTO = `Eggs: this person eats only the whites. Eggs whose yolk stays separate (boiled, including halves in an egg curry; fried, half-fry, bull's-eye or poached) count as whites only: name the item "Egg whites" with unit "egg white", one per egg, ${EGG_WHITE_VALUES}. Count whole eggs only if the note mentions the yolk or whole eggs. Where yolk is beaten in (omelette, bhurji, scrambled eggs), go by what you see: a yellow dish has whole eggs, a pale white one is whites only.`;
+
+const EGG_WHITES_TEXT = `Eggs: this person eats only the whites. Boiled, fried, half-fry or poached eggs count as egg whites (unit "egg white", ${EGG_WHITE_VALUES}) unless the description mentions the yolk or whole eggs. An omelette, bhurji or scrambled eggs counts as whole eggs unless the description says whites.`;
 
 const ITEM_RULES = `Write each item the way an Indian home cook would ("Dal tadka", "Jeera rice", "Aloo gobi", "Masala dosa").
 For every item give:
@@ -38,8 +47,9 @@ const TEXT_PROMPT = `You estimate nutrition from a short description of food som
 
 ${ITEM_RULES}`;
 
-export function photoInstructions({ hint, outside, regulars }: MealContext): string {
+export function photoInstructions({ hint, outside, regulars, eggWhitesOnly }: MealContext): string {
   const lines = [PHOTO_PROMPT, ""];
+  if (eggWhitesOnly) lines.push(EGG_WHITES_PHOTO);
   lines.push(
     outside
       ? "The owner says this was eaten out (restaurant, dhaba, street food or delivery): assume restaurant amounts of oil, ghee, butter and portion size."
@@ -57,11 +67,12 @@ export function photoInstructions({ hint, outside, regulars }: MealContext): str
   return lines.join("\n");
 }
 
-export function textInstructions(description: string, outside: boolean): string {
+export function textInstructions(description: string, { outside, eggWhitesOnly }: Pick<MealContext, "outside" | "eggWhitesOnly">): string {
   const setting = outside
     ? "It was eaten out: assume restaurant amounts of oil, ghee and portions."
     : "Assume home cooking unless the description says otherwise.";
-  return `${TEXT_PROMPT}\n\n${setting}\n\nDescription: "${description}"`;
+  const eggs = eggWhitesOnly ? `\n\n${EGG_WHITES_TEXT}` : "";
+  return `${TEXT_PROMPT}\n\n${setting}${eggs}\n\nDescription: "${description}"`;
 }
 
 /* Answer shape, as standard JSON Schema. Every object is closed and every field required (nullable where optional), which both Gemini and Claude accept. */
